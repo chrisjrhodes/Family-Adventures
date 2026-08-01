@@ -1,0 +1,62 @@
+{
+  "jacob": {
+    "name": "Jacob",
+    "role": "Pathfinder",
+    "icon": "\ud83e\udded",
+    "colours": [
+      "#315b3f",
+      "#765238"
+    ],
+    "secret": "Capture a genuine photo of Dad laughing."
+  },
+  "caitlin": {
+    "name": "Caitlin",
+    "role": "Discoverer",
+    "icon": "\u2726",
+    "colours": [
+      "#7452a5",
+      "#1f9aa0"
+    ],
+    "secret": "Capture a brilliant photo of Jacob and Caitlin together."
+  },
+  "esmae": {
+    "name": "Esmae",
+    "role": "Trailblazer",
+    "icon": "\ud83e\udeb6",
+    "colours": [
+      "#d94f9b",
+      "#7b4fa3"
+    ],
+    "secret": "Capture a brilliant photo of Esmae and Jacob together."
+  },
+  "jess": {
+    "name": "Jess",
+    "role": "Memory Keeper",
+    "icon": "\ud83d\udcd6",
+    "colours": [
+      "#245743",
+      "#6d8b78"
+    ],
+    "secret": "Capture a brilliant photo of Jess and Caitlin together."
+  },
+  "chris": {
+    "name": "Chris",
+    "role": "Chief Explorer",
+    "icon": "\ud83d\uddfa\ufe0f",
+    "colours": [
+      "#244735",
+      "#b57a45"
+    ],
+    "secret": "Capture a photo of Dad and Grandad together."
+  },
+  "grandad": {
+    "name": "Grandad",
+    "role": "Senior Explorer",
+    "icon": "\ud83c\udfd5\ufe0f",
+    "colours": [
+      "#42566f",
+      "#8a6a42"
+    ],
+    "secret": "Capture the whole family together without making it feel staged."
+  }
+}

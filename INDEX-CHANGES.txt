@@ -1,0 +1,19 @@
+Replace the old script tags at the bottom of index.html with:
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js?v=4"></script>
+<script type="module" src="js/app.js?v=4"></script>
+
+Also update the profile picker template:
+
+1. Change:
+<p class="eyebrow">CENTER PARCS 2026</p>
+
+to:
+<p id="holiday-label" class="eyebrow"></p>
+
+2. Change:
+<h1>Family<br />Adventure</h1>
+
+to:
+<h1 id="app-title"></h1>
