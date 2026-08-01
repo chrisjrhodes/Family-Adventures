@@ -1,81 +1,59 @@
 const PROFILES = {
-  jacob: {
-    name: "Jacob",
-    role: "Pathfinder",
-    colours: ["#315b3f", "#765238"],
-    secret: "Capture a genuine photo of Dad laughing."
-  },
-  caitlin: {
-    name: "Caitlin",
-    role: "Discoverer",
-    colours: ["#7452a5", "#1f9aa0"],
-    secret: "Capture a brilliant photo of Jacob and Caitlin together."
-  },
-  esmae: {
-    name: "Esmae",
-    role: "Trailblazer",
-    colours: ["#d94f9b", "#7b4fa3"],
-    secret: "Capture a brilliant photo of Esmae and Jacob together."
-  },
-  jess: {
-    name: "Jess",
-    role: "Memory Keeper",
-    colours: ["#245743", "#6d8b78"],
-    secret: "Capture a brilliant photo of Jess and Caitlin together."
-  },
-  chris: {
-    name: "Chris",
-    role: "Chief Explorer",
-    colours: ["#244735", "#b57a45"],
-    secret: "Capture a photo of Dad and Grandad together."
-  },
-  grandad: {
-    name: "Grandad",
-    role: "Senior Explorer",
-    colours: ["#42566f", "#8a6a42"],
-    secret: "Capture the whole family together without making it feel staged."
-  }
+  jacob: { name: "Jacob", role: "Pathfinder", icon: "🧭", colours: ["#315b3f", "#765238"], secret: "Capture a genuine photo of Dad laughing." },
+  caitlin: { name: "Caitlin", role: "Discoverer", icon: "✦", colours: ["#7452a5", "#1f9aa0"], secret: "Capture a brilliant photo of Jacob and Caitlin together." },
+  esmae: { name: "Esmae", role: "Trailblazer", icon: "🪶", colours: ["#d94f9b", "#7b4fa3"], secret: "Capture a brilliant photo of Esmae and Jacob together." },
+  jess: { name: "Jess", role: "Memory Keeper", icon: "📖", colours: ["#245743", "#6d8b78"], secret: "Capture a brilliant photo of Jess and Caitlin together." },
+  chris: { name: "Chris", role: "Chief Explorer", icon: "🗺️", colours: ["#244735", "#b57a45"], secret: "Capture a photo of Dad and Grandad together." },
+  grandad: { name: "Grandad", role: "Senior Explorer", icon: "🏕️", colours: ["#42566f", "#8a6a42"], secret: "Capture the whole family together without making it feel staged." }
 };
 
 const DAYS = [
-  { day: "Day 1", theme: "Blue", photo: "Find the strongest photo featuring something blue.", video: "What was the first thing you noticed when we arrived?" },
-  { day: "Day 2", theme: "Nature", photo: "Capture nature in a way nobody else will think of.", video: "What was your favourite thing today?" },
+  { day: "Day 1", theme: "Blue", photo: "Find something blue that nobody else would think to photograph.", video: "What was the first thing you noticed when we arrived?" },
+  { day: "Day 2", theme: "Nature", photo: "Capture nature in a way everyone else might walk straight past.", video: "What was your favourite thing today?" },
   { day: "Day 3", theme: "Triangles", photo: "Find a triangle hiding somewhere in the day.", video: "What made you laugh most today?" },
   { day: "Day 4", theme: "Reflections", photo: "Use water, glass, mirrors or shadows to create a reflection.", video: "What surprised you today?" },
   { day: "Day 5", theme: "Movement", photo: "Capture something or someone in motion.", video: "What would you do again from today?" },
-  { day: "Day 6", theme: "Patterns", photo: "Find a pattern other people might walk straight past.", video: "What is one thing you do not want to forget?" },
+  { day: "Day 6", theme: "Patterns", photo: "Find a pattern other people might not notice.", video: "What is one thing you do not want to forget?" },
   { day: "Day 7", theme: "The Holiday in One Photo", photo: "Take one photo that sums up the whole holiday for you.", video: "Describe the holiday in one sentence." }
 ];
 
 const app = document.getElementById("app");
 const cfg = window.APP_CONFIG || {};
-const hasSupabase = cfg.supabaseUrl && !cfg.supabaseUrl.includes("YOUR_");
-const supabaseClient = hasSupabase
-  ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey)
-  : null;
+const hasSupabase = Boolean(cfg.supabaseUrl && cfg.supabaseAnonKey && !cfg.supabaseUrl.includes("YOUR_"));
+const supabaseClient = hasSupabase ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey) : null;
 
 let state = {
   profileId: localStorage.getItem("family-adventure-profile"),
   dayIndex: Number(localStorage.getItem("family-adventure-day") || 0),
   photoFile: null,
-  videoFile: null,
   galleryDay: 0
 };
 
 function setTheme(profile) {
   document.documentElement.style.setProperty("--accent", profile.colours[0]);
   document.documentElement.style.setProperty("--accent-2", profile.colours[1]);
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", profile.colours[0]);
+}
+
+function photoKey(dayIndex = state.dayIndex) {
+  return `family-adventure-${state.profileId}-${dayIndex}-photo`;
+}
+
+function videoKey(dayIndex = state.dayIndex) {
+  return `family-adventure-${state.profileId}-${dayIndex}-video`;
 }
 
 function renderPicker() {
+  document.documentElement.style.setProperty("--accent", "#244735");
+  document.documentElement.style.setProperty("--accent-2", "#b57a45");
   const tpl = document.getElementById("profile-picker-template").content.cloneNode(true);
   const grid = tpl.querySelector("#profile-grid");
 
-  Object.entries(PROFILES).forEach(([id, p]) => {
+  Object.entries(PROFILES).forEach(([id, profile]) => {
     const button = document.createElement("button");
     button.className = "profile-card";
-    button.style.background = `linear-gradient(135deg, ${p.colours[0]}, ${p.colours[1]})`;
-    button.innerHTML = `<strong>${p.name}</strong><span>${p.role}</span>`;
+    button.style.background = `linear-gradient(145deg, ${profile.colours[0]}, ${profile.colours[1]})`;
+    button.innerHTML = `<span class="profile-icon">${profile.icon}</span><strong>${profile.name}</strong><small>${profile.role}</small>`;
     button.onclick = () => {
       state.profileId = id;
       localStorage.setItem("family-adventure-profile", id);
@@ -87,19 +65,21 @@ function renderPicker() {
   app.replaceChildren(tpl);
 }
 
-function renderDashboard() {
+async function renderDashboard() {
   const profile = PROFILES[state.profileId];
   if (!profile) return renderPicker();
   setTheme(profile);
 
-  const tpl = document.getElementById("dashboard-template").content.cloneNode(true);
   const day = DAYS[state.dayIndex];
+  const tpl = document.getElementById("dashboard-template").content.cloneNode(true);
 
-  tpl.querySelector("#welcome-title").textContent = `Welcome, ${profile.name}`;
+  tpl.querySelector("#welcome-title").textContent = profile.name;
+  tpl.querySelector("#explorer-role").textContent = `${profile.icon} ${profile.role}`;
   tpl.querySelector("#avatar").textContent = profile.name[0];
   tpl.querySelector("#avatar").style.background = profile.colours[0];
   tpl.querySelector("#day-label").textContent = day.day;
   tpl.querySelector("#day-theme").textContent = day.theme;
+  tpl.querySelector("#mission-number").textContent = String(state.dayIndex + 1).padStart(2, "0");
   tpl.querySelector("#photo-title").textContent = day.theme;
   tpl.querySelector("#photo-copy").textContent = day.photo;
   tpl.querySelector("#video-question").textContent = day.video;
@@ -110,118 +90,152 @@ function renderDashboard() {
     state.profileId = null;
     renderPicker();
   };
-
   tpl.querySelector("#prev-day").onclick = () => changeDay(-1);
   tpl.querySelector("#next-day").onclick = () => changeDay(1);
-  tpl.querySelector("#open-gallery").onclick = () => renderGallery();
+  tpl.querySelector("#open-gallery").onclick = renderGallery;
+
+  const secretButton = tpl.querySelector("#reveal-secret");
+  const secretContent = tpl.querySelector("#secret-content");
+  secretButton.onclick = () => {
+    secretButton.classList.add("hidden");
+    secretContent.classList.remove("hidden");
+  };
 
   const photoInput = tpl.querySelector("#photo-input");
-  const videoInput = tpl.querySelector("#video-input");
   const photoPreview = tpl.querySelector("#photo-preview");
-  const videoPreview = tpl.querySelector("#video-preview");
   const savePhoto = tpl.querySelector("#save-photo");
-  const saveVideo = tpl.querySelector("#save-video");
 
   photoInput.onchange = () => {
-    state.photoFile = photoInput.files[0];
+    state.photoFile = photoInput.files[0] || null;
     if (!state.photoFile) return;
-    photoPreview.innerHTML = `<img alt="Selected photo" src="${URL.createObjectURL(state.photoFile)}">`;
+    photoPreview.innerHTML = `<img alt="Selected mission photo" src="${URL.createObjectURL(state.photoFile)}">`;
     photoPreview.classList.remove("hidden");
     savePhoto.classList.remove("hidden");
   };
 
-  videoInput.onchange = () => {
-    state.videoFile = videoInput.files[0];
-    if (!state.videoFile) return;
-    videoPreview.innerHTML = `<video controls src="${URL.createObjectURL(state.videoFile)}"></video>`;
-    videoPreview.classList.remove("hidden");
-    saveVideo.classList.remove("hidden");
+  savePhoto.onclick = async () => savePhotoMission(state.photoFile, savePhoto);
+
+  const toggleVideo = tpl.querySelector("#toggle-video");
+  toggleVideo.onclick = () => {
+    const complete = !localStorage.getItem(videoKey());
+    if (complete) localStorage.setItem(videoKey(), "1");
+    else localStorage.removeItem(videoKey());
+    updateProgressUI();
   };
 
-  savePhoto.onclick = async () => saveMedia("photo", state.photoFile, savePhoto);
-  saveVideo.onclick = async () => saveMedia("video", state.videoFile, saveVideo);
-
   app.replaceChildren(tpl);
-  refreshStatus();
+  await refreshPhotoStatus();
+  updateProgressUI();
+  updateOverallProgress();
 }
 
 function changeDay(delta) {
   state.dayIndex = (state.dayIndex + delta + DAYS.length) % DAYS.length;
   localStorage.setItem("family-adventure-day", state.dayIndex);
+  state.photoFile = null;
   renderDashboard();
 }
 
-function statusKey(type) {
-  return `family-adventure-${state.profileId}-${state.dayIndex}-${type}`;
-}
-
-async function refreshStatus() {
-  const photoStatus = document.getElementById("photo-status");
-  const videoStatus = document.getElementById("video-status");
-  if (!photoStatus || !videoStatus) return;
-
-  if (!hasSupabase) {
-    photoStatus.textContent = localStorage.getItem(statusKey("photo")) ? "Photo saved locally" : "Photo not saved";
-    videoStatus.textContent = localStorage.getItem(statusKey("video")) ? "Video saved locally" : "Video not saved";
-    return;
-  }
-
+async function refreshPhotoStatus() {
+  if (!hasSupabase) return;
   const { data, error } = await supabaseClient
     .from("entries")
-    .select("media_type")
+    .select("id")
     .eq("profile_id", state.profileId)
-    .eq("day_index", state.dayIndex);
+    .eq("day_index", state.dayIndex)
+    .eq("media_type", "photo")
+    .limit(1);
 
-  if (error) return;
-  const types = new Set(data.map(x => x.media_type));
-  photoStatus.textContent = types.has("photo") ? "Photo saved ✓" : "Photo not saved";
-  videoStatus.textContent = types.has("video") ? "Video saved ✓" : "Video not saved";
+  if (!error && data?.length) localStorage.setItem(photoKey(), "1");
 }
 
-async function saveMedia(type, file, button) {
+function updateProgressUI() {
+  const photoDone = Boolean(localStorage.getItem(photoKey()));
+  const videoDone = Boolean(localStorage.getItem(videoKey()));
+
+  const photoDot = document.getElementById("photo-dot");
+  const videoDot = document.getElementById("video-dot");
+  const photoProgress = document.getElementById("photo-progress");
+  const videoButton = document.getElementById("toggle-video");
+  const dayComplete = document.getElementById("day-complete");
+
+  photoDot?.classList.toggle("complete", photoDone);
+  videoDot?.classList.toggle("complete", videoDone);
+
+  if (photoProgress) {
+    photoProgress.textContent = photoDone ? "✓ Photo mission complete" : "○ Awaiting photo";
+    photoProgress.classList.toggle("complete", photoDone);
+  }
+
+  if (videoButton) {
+    videoButton.textContent = videoDone ? "Recorded ✓" : "Mark as recorded";
+    videoButton.classList.toggle("complete", videoDone);
+  }
+
+  dayComplete?.classList.toggle("hidden", !(photoDone && videoDone));
+}
+
+function updateOverallProgress() {
+  let completed = 0;
+  for (let i = 0; i < DAYS.length; i++) {
+    if (localStorage.getItem(photoKey(i)) && localStorage.getItem(videoKey(i))) completed++;
+  }
+  const count = document.getElementById("progress-count");
+  if (count) count.innerHTML = `<strong>${completed}/7</strong><span>days complete</span>`;
+}
+
+async function compressPhoto(file, maxDimension = 1600, quality = 0.82) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob(value => value ? resolve(value) : reject(new Error("Photo compression failed")), "image/jpeg", quality);
+  });
+  return new File([blob], `mission-${Date.now()}.jpg`, { type: "image/jpeg" });
+}
+
+async function savePhotoMission(file, button) {
   if (!file) return;
   button.disabled = true;
-  button.textContent = "Saving...";
+  button.textContent = "Preparing photo...";
 
   try {
-    if (!hasSupabase) {
-      localStorage.setItem(statusKey(type), "1");
-      alert("Saved in demo mode on this device. Add Supabase details in config.js for shared uploads.");
-      renderDashboard();
-      return;
-    }
+    if (!hasSupabase) throw new Error("Supabase is not connected.");
 
-    const ext = file.name.split(".").pop() || (type === "photo" ? "jpg" : "mp4");
-    const path = `${state.profileId}/day-${state.dayIndex + 1}/${type}-${Date.now()}.${ext}`;
+    const compressed = await compressPhoto(file);
+    button.textContent = "Uploading...";
+    const path = `${state.profileId}/day-${state.dayIndex + 1}/photo-${Date.now()}.jpg`;
 
     const { error: uploadError } = await supabaseClient.storage
       .from("adventure-media")
-      .upload(path, file, { upsert: false, contentType: file.type });
-
+      .upload(path, compressed, { upsert: false, contentType: "image/jpeg" });
     if (uploadError) throw uploadError;
 
-    const { data: publicData } = supabaseClient.storage
-      .from("adventure-media")
-      .getPublicUrl(path);
-
-    const { error: dbError } = await supabaseClient
-      .from("entries")
-      .insert({
-        profile_id: state.profileId,
-        profile_name: PROFILES[state.profileId].name,
-        day_index: state.dayIndex,
-        media_type: type,
-        media_url: publicData.publicUrl,
-        theme: DAYS[state.dayIndex].theme
-      });
-
+    const { data: publicData } = supabaseClient.storage.from("adventure-media").getPublicUrl(path);
+    const { error: dbError } = await supabaseClient.from("entries").insert({
+      profile_id: state.profileId,
+      profile_name: PROFILES[state.profileId].name,
+      day_index: state.dayIndex,
+      media_type: "photo",
+      media_url: publicData.publicUrl,
+      theme: DAYS[state.dayIndex].theme
+    });
     if (dbError) throw dbError;
+
+    localStorage.setItem(photoKey(), "1");
+    state.photoFile = null;
     renderDashboard();
-  } catch (err) {
-    console.error(err);
-    alert(`Could not save: ${err.message}`);
+  } catch (error) {
+    console.error(error);
+    alert(`Could not save photo: ${error.message}`);
     button.disabled = false;
-    button.textContent = `Save ${type}`;
+    button.textContent = "Submit mission photo";
   }
 }
 
@@ -229,15 +243,15 @@ async function renderGallery() {
   const tpl = document.getElementById("gallery-template").content.cloneNode(true);
   const tabs = tpl.querySelector("#gallery-tabs");
 
-  DAYS.forEach((d, i) => {
-    const btn = document.createElement("button");
-    btn.className = `gallery-tab ${i === state.galleryDay ? "active" : ""}`;
-    btn.textContent = d.day;
-    btn.onclick = () => {
-      state.galleryDay = i;
+  DAYS.forEach((day, index) => {
+    const button = document.createElement("button");
+    button.className = `gallery-tab ${index === state.galleryDay ? "active" : ""}`;
+    button.textContent = day.day;
+    button.onclick = () => {
+      state.galleryDay = index;
       renderGallery();
     };
-    tabs.appendChild(btn);
+    tabs.appendChild(button);
   });
 
   tpl.querySelector("#back-dashboard").onclick = renderDashboard;
@@ -248,9 +262,8 @@ async function renderGallery() {
 async function loadGallery() {
   const grid = document.getElementById("gallery-grid");
   const empty = document.getElementById("gallery-empty");
-
   if (!hasSupabase) {
-    empty.textContent = "Gallery needs Supabase to share uploads between devices.";
+    empty.textContent = "The shared gallery needs Supabase.";
     empty.classList.remove("hidden");
     return;
   }
@@ -259,6 +272,7 @@ async function loadGallery() {
     .from("entries")
     .select("*")
     .eq("day_index", state.galleryDay)
+    .eq("media_type", "photo")
     .order("created_at", { ascending: true });
 
   if (error || !data?.length) {
@@ -267,14 +281,24 @@ async function loadGallery() {
   }
 
   data.forEach(entry => {
-    const item = document.createElement("article");
+    const item = document.createElement("button");
     item.className = "gallery-item";
-    item.innerHTML = entry.media_type === "photo"
-      ? `<img src="${entry.media_url}" alt="${entry.profile_name}'s ${entry.theme} photo">`
-      : `<video controls src="${entry.media_url}"></video>`;
-    item.innerHTML += `<div class="gallery-meta"><strong>${entry.profile_name}</strong><br>${entry.theme} · ${entry.media_type}</div>`;
+    item.innerHTML = `<img src="${entry.media_url}" alt="${entry.profile_name}'s ${entry.theme} photo"><div class="gallery-meta"><strong>${entry.profile_name}</strong><span>${entry.theme}</span></div>`;
+    item.onclick = () => openPhoto(entry);
     grid.appendChild(item);
   });
 }
+
+function openPhoto(entry) {
+  const dialog = document.getElementById("photo-dialog");
+  document.getElementById("dialog-image").src = entry.media_url;
+  document.getElementById("dialog-caption").textContent = `${entry.profile_name} · ${entry.theme}`;
+  dialog.showModal();
+}
+
+document.getElementById("close-dialog").onclick = () => document.getElementById("photo-dialog").close();
+document.getElementById("photo-dialog").onclick = event => {
+  if (event.target.id === "photo-dialog") event.target.close();
+};
 
 state.profileId ? renderDashboard() : renderPicker();

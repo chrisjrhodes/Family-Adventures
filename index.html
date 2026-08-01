@@ -6,115 +6,128 @@
   <meta name="theme-color" content="#244735" />
   <title>Family Adventure</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
   <main id="app"></main>
 
   <template id="profile-picker-template">
     <section class="screen picker-screen">
-      <div class="brand-mark">FA</div>
-      <p class="eyebrow">CENTER PARCS 2026</p>
-      <h1>Family<br />Adventure</h1>
-      <p class="intro">Choose your explorer profile.</p>
+      <div class="picker-hero">
+        <div class="brand-mark">🧭</div>
+        <p class="eyebrow">CENTER PARCS 2026</p>
+        <h1>Family<br />Adventure</h1>
+        <p class="intro">Seven days. Seven photo missions. One family story.</p>
+      </div>
+      <p class="section-label">Choose your explorer</p>
       <div id="profile-grid" class="profile-grid"></div>
     </section>
   </template>
 
   <template id="dashboard-template">
-    <section class="screen">
+    <section class="screen dashboard-screen">
       <header class="topbar">
         <button id="switch-profile" class="icon-button" aria-label="Switch profile">←</button>
         <div>
           <p class="eyebrow">FAMILY ADVENTURE</p>
-          <h1 id="welcome-title">Welcome</h1>
+          <h2 id="welcome-title">Welcome</h2>
         </div>
         <div id="avatar" class="avatar"></div>
       </header>
 
+      <section class="explorer-banner">
+        <div>
+          <p class="eyebrow light">EXPLORER CLASS</p>
+          <strong id="explorer-role"></strong>
+        </div>
+        <div id="progress-count" class="progress-count"></div>
+      </section>
+
       <nav class="day-nav" aria-label="Choose day">
-        <button id="prev-day" class="day-arrow">‹</button>
+        <button id="prev-day" class="day-arrow" aria-label="Previous day">‹</button>
         <div>
           <p id="day-label" class="eyebrow"></p>
           <h2 id="day-theme"></h2>
         </div>
-        <button id="next-day" class="day-arrow">›</button>
+        <button id="next-day" class="day-arrow" aria-label="Next day">›</button>
       </nav>
 
-      <section class="card mission-card">
-        <div class="card-icon">📸</div>
-        <div>
-          <p class="eyebrow">TODAY'S PHOTO THEME</p>
-          <h3 id="photo-title"></h3>
-          <p id="photo-copy"></p>
-        </div>
+      <section class="mission-briefing">
+        <p class="mission-stamp">PHOTO MISSION</p>
+        <div class="mission-number" id="mission-number"></div>
+        <h3 id="photo-title"></h3>
+        <p id="photo-copy"></p>
+        <div id="photo-progress" class="mission-status">○ Awaiting photo</div>
       </section>
 
       <section class="upload-card">
         <label class="upload-button">
-          <span>Take or choose photo</span>
+          <span>📸 Take or choose photo</span>
           <input id="photo-input" type="file" accept="image/*" capture="environment" />
         </label>
         <div id="photo-preview" class="preview hidden"></div>
-        <button id="save-photo" class="primary-button hidden">Save photo</button>
+        <button id="save-photo" class="primary-button hidden">Submit mission photo</button>
       </section>
 
-      <section class="card video-card">
-        <div class="card-icon">🎥</div>
+      <section class="video-prompt card-panel">
+        <div class="prompt-icon">🎥</div>
         <div>
           <p class="eyebrow">10 SECOND VIDEO DIARY</p>
           <h3 id="video-question"></h3>
-          <p>One take. No overthinking it.</p>
+          <p>Record it on your phone and save it to the Family Adventure Google Photos album.</p>
         </div>
+        <button id="toggle-video" class="complete-button">Mark as recorded</button>
       </section>
 
-      <section class="upload-card">
-        <label class="upload-button secondary">
-          <span>Record or choose video</span>
-          <input id="video-input" type="file" accept="video/*" capture="user" />
-        </label>
-        <div id="video-preview" class="preview hidden"></div>
-        <button id="save-video" class="primary-button hidden">Save video</button>
-      </section>
-
-      <details class="secret-card">
-        <summary>
-          <span>🕵️ Secret mission</span>
-          <span>Tap to reveal</span>
-        </summary>
-        <div class="secret-content">
-          <p class="eyebrow">TOP SECRET</p>
+      <section class="secret-mission-card">
+        <button id="reveal-secret" class="secret-cover">
+          <span>TOP SECRET</span>
+          <strong>Secret photo mission</strong>
+          <small>Tap to reveal</small>
+        </button>
+        <div id="secret-content" class="secret-content hidden">
+          <p class="eyebrow light">YOUR MISSION FOR THE WEEK</p>
           <h3 id="secret-mission"></h3>
-          <p>Do not tell anyone. Candid beats staged.</p>
+          <p>Do not tell anyone. Do not ask them to pose. One brilliant candid photo is enough.</p>
         </div>
-      </details>
-
-      <section class="status-row">
-        <div class="status-pill" id="photo-status">Photo not saved</div>
-        <div class="status-pill" id="video-status">Video not saved</div>
       </section>
 
-      <button id="open-gallery" class="text-button">Open family gallery</button>
+      <section class="day-completion card-panel">
+        <p class="eyebrow">TODAY'S PROGRESS</p>
+        <div class="progress-list">
+          <div><span id="photo-dot" class="progress-dot"></span> Photo mission</div>
+          <div><span id="video-dot" class="progress-dot"></span> Video diary</div>
+        </div>
+        <div id="day-complete" class="day-complete hidden">MISSION COMPLETE ✓</div>
+      </section>
+
+      <button id="open-gallery" class="gallery-button">View tonight's memories</button>
     </section>
   </template>
 
   <template id="gallery-template">
-    <section class="screen">
+    <section class="screen gallery-screen">
       <header class="topbar">
         <button id="back-dashboard" class="icon-button">←</button>
         <div>
           <p class="eyebrow">FAMILY GALLERY</p>
-          <h1>Holiday memories</h1>
+          <h2>Tonight's memories</h2>
         </div>
       </header>
       <div id="gallery-tabs" class="gallery-tabs"></div>
       <div id="gallery-grid" class="gallery-grid"></div>
-      <p id="gallery-empty" class="empty-state hidden">Nothing uploaded yet.</p>
+      <p id="gallery-empty" class="empty-state hidden">No mission photos yet.</p>
     </section>
   </template>
 
+  <dialog id="photo-dialog" class="photo-dialog">
+    <button id="close-dialog" class="dialog-close">×</button>
+    <img id="dialog-image" alt="Family adventure photo" />
+    <p id="dialog-caption"></p>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="config.js?v=3"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
