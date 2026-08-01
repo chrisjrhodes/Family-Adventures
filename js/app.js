@@ -348,14 +348,21 @@ function renderAdmin(returnTo = "dashboard") {
     .getElementById("admin-template")
     .content.cloneNode(true);
 
-  tpl.querySelector("#back-from-admin").onclick = () => {
-    if (returnTo === "picker" || !state.profileId) renderPicker();
-    else renderDashboard();
-  };
-
+  const backButton = tpl.querySelector("#back-from-admin");
   const pinInput = tpl.querySelector("#admin-pin");
   const unlockButton = tpl.querySelector("#unlock-admin");
   const error = tpl.querySelector("#admin-error");
+  const adminLock = tpl.querySelector("#admin-lock");
+  const adminEditor = tpl.querySelector("#admin-editor");
+  const missionsForm = tpl.querySelector("#missions-form");
+
+  backButton.onclick = () => {
+    if (returnTo === "picker" || !state.profileId) {
+      renderPicker();
+    } else {
+      renderDashboard();
+    }
+  };
 
   unlockButton.onclick = () => {
     if (pinInput.value !== String(cfg.adminPin || "")) {
@@ -364,10 +371,17 @@ function renderAdmin(returnTo = "dashboard") {
     }
 
     error.classList.add("hidden");
-    tpl.querySelector("#admin-lock").classList.add("hidden");
-    tpl.querySelector("#admin-editor").classList.remove("hidden");
-    buildMissionEditor(tpl.querySelector("#missions-form"));
+    adminLock.classList.add("hidden");
+    adminEditor.classList.remove("hidden");
+    buildMissionEditor(missionsForm);
   };
+
+  pinInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      unlockButton.click();
+    }
+  });
 
   app.replaceChildren(tpl);
 }
