@@ -1,0 +1,51 @@
+{
+  "id": "center-parcs-2026",
+  "title": "Center Parcs",
+  "subtitle": "2026",
+  "appTitle": "Family Adventure",
+  "startDate": "2026-08-10",
+  "days": [
+    {
+      "day": "Day 1",
+      "theme": "Blue",
+      "photo": "Find something blue that nobody else would think to photograph.",
+      "video": "What was the first thing you noticed when we arrived?"
+    },
+    {
+      "day": "Day 2",
+      "theme": "Nature",
+      "photo": "Capture nature in a way everyone else might walk straight past.",
+      "video": "What was your favourite thing today?"
+    },
+    {
+      "day": "Day 3",
+      "theme": "Triangles",
+      "photo": "Find a triangle hiding somewhere in the day.",
+      "video": "What made you laugh most today?"
+    },
+    {
+      "day": "Day 4",
+      "theme": "Reflections",
+      "photo": "Use water, glass, mirrors or shadows to create a reflection.",
+      "video": "What surprised you today?"
+    },
+    {
+      "day": "Day 5",
+      "theme": "Movement",
+      "photo": "Capture something or someone in motion.",
+      "video": "What would you do again from today?"
+    },
+    {
+      "day": "Day 6",
+      "theme": "Patterns",
+      "photo": "Find a pattern other people might not notice.",
+      "video": "What is one thing you do not want to forget?"
+    },
+    {
+      "day": "Day 7",
+      "theme": "The Holiday in One Photo",
+      "photo": "Take one photo that sums up the whole holiday for you.",
+      "video": "Describe the holiday in one sentence."
+    }
+  ]
+}
