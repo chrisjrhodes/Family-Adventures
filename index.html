@@ -6,11 +6,7 @@
   <meta name="theme-color" content="#244735" />
   <title>Family Adventure</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-<<<<<<< HEAD
-  <link rel="stylesheet" href="styles.css?v=3" />
-=======
-  <link rel="stylesheet" href="styles.css?v=5" />
->>>>>>> e107d42 (refactor: establish clean data-driven architecture)
+  <link rel="stylesheet" href="styles.css?v=6" />
 </head>
 <body>
   <main id="app">
@@ -25,17 +21,13 @@
     <section class="screen picker-screen">
       <div class="picker-hero">
         <div class="brand-mark">🧭</div>
-<<<<<<< HEAD
-        <p class="eyebrow">CENTER PARCS 2026</p>
-        <h1>Family<br />Adventure</h1>
-=======
         <p id="holiday-label" class="eyebrow"></p>
         <h1 id="app-title"></h1>
->>>>>>> e107d42 (refactor: establish clean data-driven architecture)
         <p class="intro">Seven days. Seven photo missions. One family story.</p>
       </div>
       <p class="section-label">Choose your explorer</p>
       <div id="profile-grid" class="profile-grid"></div>
+      <button id="open-admin-from-picker" class="admin-link">⚙️ Manage secret missions</button>
     </section>
   </template>
 
@@ -45,11 +37,7 @@
         <button id="switch-profile" class="icon-button" aria-label="Switch profile">←</button>
         <div>
           <p class="eyebrow">FAMILY ADVENTURE</p>
-<<<<<<< HEAD
-          <h2 id="welcome-title">Welcome</h2>
-=======
           <h2 id="welcome-title"></h2>
->>>>>>> e107d42 (refactor: establish clean data-driven architecture)
         </div>
         <div id="avatar" class="avatar"></div>
       </header>
@@ -121,6 +109,41 @@
       </section>
 
       <button id="open-gallery" class="gallery-button">View tonight's memories</button>
+      <button id="open-admin" class="admin-link">⚙️ Manage secret missions</button>
+    </section>
+  </template>
+
+
+  <template id="admin-template">
+    <section class="screen admin-screen">
+      <header class="topbar">
+        <button id="back-from-admin" class="icon-button" aria-label="Back">←</button>
+        <div>
+          <p class="eyebrow">PARENT TOOLS</p>
+          <h2>Secret missions</h2>
+        </div>
+      </header>
+
+      <section id="admin-lock" class="card-panel admin-lock">
+        <div class="prompt-icon">🔐</div>
+        <div>
+          <p class="eyebrow">ADMIN ACCESS</p>
+          <h3>Enter the family PIN</h3>
+          <p>This keeps accidental little fingers out of the mission editor.</p>
+        </div>
+        <input id="admin-pin" class="admin-input" type="password" inputmode="numeric" maxlength="8" placeholder="PIN" />
+        <button id="unlock-admin" class="primary-button">Unlock</button>
+        <p id="admin-error" class="admin-error hidden">That PIN is not correct.</p>
+      </section>
+
+      <section id="admin-editor" class="hidden">
+        <div class="admin-note">
+          Changes save to Supabase and appear on every device after refresh.
+        </div>
+        <form id="missions-form" class="mission-editor-list"></form>
+        <button id="save-missions" class="gallery-button">Save all missions</button>
+        <p id="save-result" class="save-result hidden"></p>
+      </section>
     </section>
   </template>
 
@@ -140,22 +163,13 @@
   </template>
 
   <dialog id="photo-dialog" class="photo-dialog">
-<<<<<<< HEAD
-    <button id="close-dialog" class="dialog-close">×</button>
-=======
     <button id="close-dialog" class="dialog-close" aria-label="Close">×</button>
->>>>>>> e107d42 (refactor: establish clean data-driven architecture)
     <img id="dialog-image" alt="Family adventure photo" />
     <p id="dialog-caption"></p>
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<<<<<<< HEAD
-  <script src="config.js?v=3"></script>
-  <script src="app.js?v=3"></script>
-=======
-  <script src="config.js?v=5"></script>
-  <script type="module" src="js/app.js?v=5"></script>
->>>>>>> e107d42 (refactor: establish clean data-driven architecture)
+  <script src="config.js?v=6"></script>
+  <script type="module" src="js/app.js?v=6"></script>
 </body>
 </html>

@@ -6,6 +6,7 @@ const cfg = window.APP_CONFIG || {};
 let PROFILES = {};
 let HOLIDAY = null;
 let DAYS = [];
+let MISSION_OVERRIDES = {};
 
 const hasSupabase = Boolean(
   cfg.supabaseUrl &&
@@ -17,11 +18,7 @@ const supabaseClient = hasSupabase
   ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey)
   : null;
 
-<<<<<<< HEAD
-let state = {
-=======
 const state = {
->>>>>>> e107d42 (refactor: establish clean data-driven architecture)
   profileId: localStorage.getItem("family-adventure-profile"),
   dayIndex: Number(localStorage.getItem("family-adventure-day") || 0),
   photoFile: null,
@@ -44,6 +41,26 @@ function videoKey(dayIndex = state.dayIndex) {
   return `family-adventure-${HOLIDAY.id}-${state.profileId}-${dayIndex}-video`;
 }
 
+function getSecretMission(profileId) {
+  return MISSION_OVERRIDES[profileId] || PROFILES[profileId]?.secret || "";
+}
+
+async function loadMissionOverrides() {
+  if (!hasSupabase) return {};
+
+  const { data, error } = await supabaseClient
+    .from("secret_missions")
+    .select("profile_id, mission")
+    .eq("holiday_id", HOLIDAY.id);
+
+  if (error) {
+    console.warn("Could not load mission overrides", error);
+    return {};
+  }
+
+  return Object.fromEntries(data.map(row => [row.profile_id, row.mission]));
+}
+
 function renderPicker() {
   document.documentElement.style.setProperty("--accent", "#244735");
   document.documentElement.style.setProperty("--accent-2", "#b57a45");
@@ -56,11 +73,7 @@ function renderPicker() {
     `${HOLIDAY.title.toUpperCase()} ${HOLIDAY.subtitle}`;
 
   tpl.querySelector("#app-title").innerHTML =
-<<<<<<< HEAD
-    `${HOLIDAY.appTitle.replace(" ", "<br />")}`;
-=======
     HOLIDAY.appTitle.replace(" ", "<br />");
->>>>>>> e107d42 (refactor: establish clean data-driven architecture)
 
   const grid = tpl.querySelector("#profile-grid");
 
@@ -84,6 +97,9 @@ function renderPicker() {
 
     grid.appendChild(button);
   });
+
+  tpl.querySelector("#open-admin-from-picker").onclick = () =>
+    renderAdmin("picker");
 
   app.replaceChildren(tpl);
 }
@@ -111,7 +127,7 @@ async function renderDashboard() {
   tpl.querySelector("#photo-title").textContent = day.theme;
   tpl.querySelector("#photo-copy").textContent = day.photo;
   tpl.querySelector("#video-question").textContent = day.video;
-  tpl.querySelector("#secret-mission").textContent = profile.secret;
+  tpl.querySelector("#secret-mission").textContent = getSecretMission(state.profileId);
 
   tpl.querySelector("#switch-profile").onclick = () => {
     localStorage.removeItem("family-adventure-profile");
@@ -122,6 +138,7 @@ async function renderDashboard() {
   tpl.querySelector("#prev-day").onclick = () => changeDay(-1);
   tpl.querySelector("#next-day").onclick = () => changeDay(1);
   tpl.querySelector("#open-gallery").onclick = renderGallery;
+  tpl.querySelector("#open-admin").onclick = () => renderAdmin("dashboard");
 
   const secretButton = tpl.querySelector("#reveal-secret");
   const secretContent = tpl.querySelector("#secret-content");
@@ -193,27 +210,16 @@ function updateProgressUI() {
   const photoDone = Boolean(localStorage.getItem(photoKey()));
   const videoDone = Boolean(localStorage.getItem(videoKey()));
 
-<<<<<<< HEAD
-  const photoDot = document.getElementById("photo-dot");
-  const videoDot = document.getElementById("video-dot");
-=======
   document.getElementById("photo-dot")
     ?.classList.toggle("complete", photoDone);
 
   document.getElementById("video-dot")
     ?.classList.toggle("complete", videoDone);
 
->>>>>>> e107d42 (refactor: establish clean data-driven architecture)
   const photoProgress = document.getElementById("photo-progress");
   const videoButton = document.getElementById("toggle-video");
   const dayComplete = document.getElementById("day-complete");
 
-<<<<<<< HEAD
-  photoDot?.classList.toggle("complete", photoDone);
-  videoDot?.classList.toggle("complete", videoDone);
-
-=======
->>>>>>> e107d42 (refactor: establish clean data-driven architecture)
   if (photoProgress) {
     photoProgress.textContent =
       photoDone ? "✓ Photo mission complete" : "○ Awaiting photo";
@@ -336,6 +342,115 @@ async function savePhotoMission(file, button) {
   }
 }
 
+
+function renderAdmin(returnTo = "dashboard") {
+  const tpl = document
+    .getElementById("admin-template")
+    .content.cloneNode(true);
+
+  tpl.querySelector("#back-from-admin").onclick = () => {
+    if (returnTo === "picker" || !state.profileId) renderPicker();
+    else renderDashboard();
+  };
+
+  const pinInput = tpl.querySelector("#admin-pin");
+  const unlockButton = tpl.querySelector("#unlock-admin");
+  const error = tpl.querySelector("#admin-error");
+
+  unlockButton.onclick = () => {
+    if (pinInput.value !== String(cfg.adminPin || "")) {
+      error.classList.remove("hidden");
+      return;
+    }
+
+    error.classList.add("hidden");
+    tpl.querySelector("#admin-lock").classList.add("hidden");
+    tpl.querySelector("#admin-editor").classList.remove("hidden");
+    buildMissionEditor(tpl.querySelector("#missions-form"));
+  };
+
+  app.replaceChildren(tpl);
+}
+
+function buildMissionEditor(form) {
+  form.replaceChildren();
+
+  Object.entries(PROFILES).forEach(([profileId, profile]) => {
+    const label = document.createElement("label");
+    label.className = "mission-editor-card";
+    label.innerHTML = `
+      <div class="mission-editor-heading">
+        <span class="mission-editor-icon">${profile.icon}</span>
+        <div>
+          <strong>${profile.name}</strong>
+          <small>${profile.role}</small>
+        </div>
+      </div>
+      <textarea
+        name="${profileId}"
+        rows="3"
+        maxlength="220"
+        aria-label="${profile.name}'s secret mission"
+      ></textarea>
+    `;
+
+    label.querySelector("textarea").value = getSecretMission(profileId);
+    form.appendChild(label);
+  });
+
+  document.getElementById("save-missions").onclick = saveMissionOverrides;
+}
+
+async function saveMissionOverrides() {
+  const button = document.getElementById("save-missions");
+  const result = document.getElementById("save-result");
+  const form = document.getElementById("missions-form");
+
+  button.disabled = true;
+  button.textContent = "Saving...";
+  result.classList.add("hidden");
+
+  try {
+    if (!hasSupabase) {
+      throw new Error("Supabase is not connected.");
+    }
+
+    const rows = Object.keys(PROFILES).map(profileId => {
+      const mission = form.elements[profileId].value.trim();
+
+      if (!mission) {
+        throw new Error(`${PROFILES[profileId].name} needs a mission.`);
+      }
+
+      return {
+        holiday_id: HOLIDAY.id,
+        profile_id: profileId,
+        mission
+      };
+    });
+
+    const { error } = await supabaseClient
+      .from("secret_missions")
+      .upsert(rows, { onConflict: "holiday_id,profile_id" });
+
+    if (error) throw error;
+
+    MISSION_OVERRIDES = Object.fromEntries(
+      rows.map(row => [row.profile_id, row.mission])
+    );
+
+    result.textContent = "All secret missions saved ✓";
+    result.classList.remove("hidden");
+  } catch (error) {
+    console.error(error);
+    result.textContent = `Could not save: ${error.message}`;
+    result.classList.remove("hidden");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Save all missions";
+  }
+}
+
 async function renderGallery() {
   const tpl = document
     .getElementById("gallery-template")
@@ -425,6 +540,7 @@ async function initialiseApp() {
     PROFILES = data.profiles;
     HOLIDAY = data.holiday;
     DAYS = HOLIDAY.days;
+    MISSION_OVERRIDES = await loadMissionOverrides();
 
     document.title = HOLIDAY.appTitle;
 
