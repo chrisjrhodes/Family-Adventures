@@ -215,3 +215,130 @@ p { line-height: 1.5; }
   font-weight: 850;
   color: var(--accent);
 }
+
+
+.secret-checklist {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.secret-total {
+  margin-bottom: 2px;
+  color: #dcbe69;
+  font-size: .82rem;
+  font-weight: 900;
+  letter-spacing: .06em;
+}
+
+.secret-slot {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 15px;
+  background: rgba(255,255,255,.05);
+}
+
+.secret-slot.saving {
+  opacity: .55;
+  pointer-events: none;
+}
+
+.secret-slot-copy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.secret-slot-copy strong,
+.secret-slot-copy small {
+  display: block;
+}
+
+.secret-slot-copy small {
+  color: rgba(255,255,255,.5);
+}
+
+.secret-slot img {
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.secret-upload-button {
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: #dcbe69;
+  color: #1b211d;
+  font-size: .75rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.secret-upload-button input {
+  display: none;
+}
+
+.secret-empty {
+  color: rgba(255,255,255,.6);
+}
+
+.admin-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 14px 0;
+  padding: 5px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.5);
+}
+
+.admin-tab {
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-tab.active {
+  background: var(--accent);
+  color: white;
+}
+
+.daily-editor-card label,
+.mission-editor-card label {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.daily-editor-card label span,
+.mission-editor-card label span {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 850;
+}
+
+.mission-editor-card input,
+.mission-editor-card select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid rgba(23,35,29,.14);
+  border-radius: 13px;
+  background: rgba(255,255,255,.88);
+  color: var(--ink);
+}
+
+.assignment-preview {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: .85rem;
+}

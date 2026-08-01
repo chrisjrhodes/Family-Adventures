@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#244735" />
   <title>Family Adventure</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" href="styles.css?v=6" />
+  <link rel="stylesheet" href="styles.css?v=8" />
 </head>
 <body>
   <main id="app">
@@ -95,7 +95,8 @@
         <div id="secret-content" class="secret-content hidden">
           <p class="eyebrow light">YOUR MISSION FOR THE WEEK</p>
           <h3 id="secret-mission"></h3>
-          <p>make sure to spread them out over the week.</p>
+          <p>Do not tell anyone. Complete all five pairings without giving away your assigned subject.</p>
+          <div id="secret-checklist" class="secret-checklist"></div>
         </div>
       </section>
 
@@ -140,9 +141,23 @@
         <div class="admin-note">
           Changes save to Supabase and appear on every device after refresh.
         </div>
-        <form id="missions-form" class="mission-editor-list"></form>
-        <button id="save-missions" class="gallery-button">Save all missions</button>
-        <p id="save-result" class="save-result hidden"></p>
+
+        <nav class="admin-tabs">
+          <button class="admin-tab active" data-tab="daily">Daily missions</button>
+          <button class="admin-tab" data-tab="secret">Secret assignments</button>
+        </nav>
+
+        <section id="admin-panel-daily" class="admin-panel">
+          <form id="daily-missions-form" class="mission-editor-list"></form>
+          <button id="save-daily-missions" class="gallery-button">Save daily missions</button>
+          <p id="daily-save-result" class="save-result hidden"></p>
+        </section>
+
+        <section id="admin-panel-secret" class="admin-panel hidden">
+          <form id="assignments-form" class="mission-editor-list"></form>
+          <button id="save-assignments" class="gallery-button">Save secret assignments</button>
+          <p id="assignment-save-result" class="save-result hidden"></p>
+        </section>
       </section>
     </section>
   </template>
@@ -169,7 +184,7 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=6"></script>
-  <script type="module" src="js/app.js?v=6"></script>
+  <script src="config.js?v=8"></script>
+  <script type="module" src="js/app.js?v=8"></script>
 </body>
 </html>
