@@ -6,17 +6,32 @@
   <meta name="theme-color" content="#244735" />
   <title>Family Adventure</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<<<<<<< HEAD
   <link rel="stylesheet" href="styles.css?v=3" />
+=======
+  <link rel="stylesheet" href="styles.css?v=5" />
+>>>>>>> e107d42 (refactor: establish clean data-driven architecture)
 </head>
 <body>
-  <main id="app"></main>
+  <main id="app">
+    <section class="screen loading-screen">
+      <div class="brand-mark">🧭</div>
+      <p class="eyebrow">FAMILY ADVENTURE</p>
+      <h2>Loading today's mission...</h2>
+    </section>
+  </main>
 
   <template id="profile-picker-template">
     <section class="screen picker-screen">
       <div class="picker-hero">
         <div class="brand-mark">🧭</div>
+<<<<<<< HEAD
         <p class="eyebrow">CENTER PARCS 2026</p>
         <h1>Family<br />Adventure</h1>
+=======
+        <p id="holiday-label" class="eyebrow"></p>
+        <h1 id="app-title"></h1>
+>>>>>>> e107d42 (refactor: establish clean data-driven architecture)
         <p class="intro">Seven days. Seven photo missions. One family story.</p>
       </div>
       <p class="section-label">Choose your explorer</p>
@@ -30,7 +45,11 @@
         <button id="switch-profile" class="icon-button" aria-label="Switch profile">←</button>
         <div>
           <p class="eyebrow">FAMILY ADVENTURE</p>
+<<<<<<< HEAD
           <h2 id="welcome-title">Welcome</h2>
+=======
+          <h2 id="welcome-title"></h2>
+>>>>>>> e107d42 (refactor: establish clean data-driven architecture)
         </div>
         <div id="avatar" class="avatar"></div>
       </header>
@@ -108,7 +127,7 @@
   <template id="gallery-template">
     <section class="screen gallery-screen">
       <header class="topbar">
-        <button id="back-dashboard" class="icon-button">←</button>
+        <button id="back-dashboard" class="icon-button" aria-label="Back">←</button>
         <div>
           <p class="eyebrow">FAMILY GALLERY</p>
           <h2>Tonight's memories</h2>
@@ -121,13 +140,22 @@
   </template>
 
   <dialog id="photo-dialog" class="photo-dialog">
+<<<<<<< HEAD
     <button id="close-dialog" class="dialog-close">×</button>
+=======
+    <button id="close-dialog" class="dialog-close" aria-label="Close">×</button>
+>>>>>>> e107d42 (refactor: establish clean data-driven architecture)
     <img id="dialog-image" alt="Family adventure photo" />
     <p id="dialog-caption"></p>
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<<<<<<< HEAD
   <script src="config.js?v=3"></script>
   <script src="app.js?v=3"></script>
+=======
+  <script src="config.js?v=5"></script>
+  <script type="module" src="js/app.js?v=5"></script>
+>>>>>>> e107d42 (refactor: establish clean data-driven architecture)
 </body>
 </html>

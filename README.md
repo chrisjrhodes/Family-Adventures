@@ -1,39 +1,42 @@
 # Family Adventure
 
-A reusable family holiday photo challenge and video diary app.
+A lightweight family holiday photo challenge and video diary app.
 
-## Fast setup
+## Structure
 
-1. Create a new Supabase project.
-2. Open **SQL Editor** and run `supabase.sql`.
-3. Open **Storage** and create a public bucket called `adventure-media`.
-4. In Supabase project settings, copy:
-   - Project URL
-   - Anon public key
-5. Paste both values into `config.js`.
-6. Commit these files to GitHub.
-7. Turn on GitHub Pages:
-   - Settings
-   - Pages
-   - Deploy from branch
-   - `main` / root
+```text
+/
+├── index.html
+├── styles.css
+├── config.js
+├── supabase.sql
+├── js/
+│   ├── app.js
+│   └── data.js
+└── data/
+    ├── profiles.json
+    └── holidays/
+        └── center-parcs-2026.json
+```
 
-## Profiles
+There is one application entry point: `js/app.js`.
 
-- Jacob: green and brown
-- Caitlin: purple and turquoise
-- Esmae: pink and purple
-- Jess
-- Chris
-- Grandad
+## Setup
 
-## Important
+1. Copy your working Supabase URL and publishable key into `config.js`.
+2. Keep `activeHoliday` set to `center-parcs-2026`.
+3. Commit and push.
+4. GitHub Pages will redeploy automatically.
 
-This is designed for a private family holiday, but the simple setup uses a public Supabase bucket and anonymous inserts. Anyone who discovers the site URL could technically upload or view media.
+## Future holidays
 
-For a stricter version, add Supabase Auth or a shared PIN before the holiday.
+Duplicate:
 
+`data/holidays/center-parcs-2026.json`
 
-## Branding
+Rename it, edit the content, then change `activeHoliday` in `config.js`.
 
-The app is branded as **Family Adventure** so it works for a blended family and can be reused for future trips. The current trip subtitle is **Center Parcs 2026**.
+## Storage
+
+Photos are compressed in the browser before being uploaded to Supabase.
+Videos stay on each person's phone and are stored long-term in Google Photos.

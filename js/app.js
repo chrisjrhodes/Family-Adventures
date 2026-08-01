@@ -17,7 +17,11 @@ const supabaseClient = hasSupabase
   ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey)
   : null;
 
+<<<<<<< HEAD
 let state = {
+=======
+const state = {
+>>>>>>> e107d42 (refactor: establish clean data-driven architecture)
   profileId: localStorage.getItem("family-adventure-profile"),
   dayIndex: Number(localStorage.getItem("family-adventure-day") || 0),
   photoFile: null,
@@ -52,7 +56,11 @@ function renderPicker() {
     `${HOLIDAY.title.toUpperCase()} ${HOLIDAY.subtitle}`;
 
   tpl.querySelector("#app-title").innerHTML =
+<<<<<<< HEAD
     `${HOLIDAY.appTitle.replace(" ", "<br />")}`;
+=======
+    HOLIDAY.appTitle.replace(" ", "<br />");
+>>>>>>> e107d42 (refactor: establish clean data-driven architecture)
 
   const grid = tpl.querySelector("#profile-grid");
 
@@ -185,15 +193,27 @@ function updateProgressUI() {
   const photoDone = Boolean(localStorage.getItem(photoKey()));
   const videoDone = Boolean(localStorage.getItem(videoKey()));
 
+<<<<<<< HEAD
   const photoDot = document.getElementById("photo-dot");
   const videoDot = document.getElementById("video-dot");
+=======
+  document.getElementById("photo-dot")
+    ?.classList.toggle("complete", photoDone);
+
+  document.getElementById("video-dot")
+    ?.classList.toggle("complete", videoDone);
+
+>>>>>>> e107d42 (refactor: establish clean data-driven architecture)
   const photoProgress = document.getElementById("photo-progress");
   const videoButton = document.getElementById("toggle-video");
   const dayComplete = document.getElementById("day-complete");
 
+<<<<<<< HEAD
   photoDot?.classList.toggle("complete", photoDone);
   videoDot?.classList.toggle("complete", videoDone);
 
+=======
+>>>>>>> e107d42 (refactor: establish clean data-driven architecture)
   if (photoProgress) {
     photoProgress.textContent =
       photoDone ? "✓ Photo mission complete" : "○ Awaiting photo";

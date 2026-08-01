@@ -21,6 +21,10 @@ body {
 button, input { font: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
 .screen { width: min(100%, 720px); min-height: 100vh; margin: 0 auto; padding: max(22px, env(safe-area-inset-top)) 18px max(40px, env(safe-area-inset-bottom)); }
+<<<<<<< HEAD
+=======
+.loading-screen, .picker-screen { display: flex; flex-direction: column; justify-content: center; }
+>>>>>>> e107d42 (refactor: establish clean data-driven architecture)
 .hidden { display: none !important; }
 .eyebrow { margin: 0; font-size: .7rem; font-weight: 900; letter-spacing: .15em; color: var(--muted); }
 .eyebrow.light { color: rgba(255,255,255,.7); }
@@ -28,7 +32,10 @@ h1 { margin: 8px 0 14px; font-size: clamp(3.1rem, 14vw, 5.6rem); line-height: .8
 h2 { margin: 2px 0 0; font-size: 1.65rem; line-height: 1.05; }
 h3 { margin: 6px 0 8px; font-size: 1.45rem; }
 p { line-height: 1.5; }
+<<<<<<< HEAD
 .picker-screen { display: flex; flex-direction: column; justify-content: center; }
+=======
+>>>>>>> e107d42 (refactor: establish clean data-driven architecture)
 .picker-hero { padding: 16px 4px 30px; }
 .brand-mark { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 22px; margin-bottom: 20px; background: var(--accent); font-size: 2rem; box-shadow: var(--shadow); }
 .intro { max-width: 380px; color: var(--muted); font-size: 1.05rem; }
