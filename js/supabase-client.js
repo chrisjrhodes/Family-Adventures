@@ -15,8 +15,9 @@ export const supabaseClient = hasSupabase
 
 export function requireSupabase() {
   if (!supabaseClient) {
-    throw new Error("Supabase is not connected.");
+    throw new Error("Supabase is not configured or available.");
   }
 
   return supabaseClient;
 }
+
