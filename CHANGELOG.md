@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.6 Explorer Accounts
+
+- Explorer PIN check-in
+- Parent PIN override and Parent Mode
+- Remembered explorer per device
+- Progress dashboard
+- Explorer and Parent PIN management
+- Hashed PINs and short-lived Parent authorisation tokens
+
+
 ## v0.3 Clean Architecture
 
 - Removed duplicate application entry points

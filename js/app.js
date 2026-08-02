@@ -22,10 +22,10 @@ const supabaseClient = hasSupabase
   : null;
 
 const state = {
-  profileId: localStorage.getItem("family-adventure-profile"),
+  profileId: localStorage.getItem("family-adventure-active-explorer"),
+  pendingProfileId: null,
   dayIndex: Number(localStorage.getItem("family-adventure-day") || 0),
-  photoFile: null,
-  galleryDay: 0
+  photoFile: null, galleryDay: 0, parentUnlocked: false, parentToken: null
 };
 
 function setTheme(profile) {
@@ -156,44 +156,33 @@ function getSecretPhoto(explorerProfileId, partnerId) {
 function renderPicker() {
   document.documentElement.style.setProperty("--accent", "#244735");
   document.documentElement.style.setProperty("--accent-2", "#b57a45");
-
-  const tpl = document
-    .getElementById("profile-picker-template")
-    .content.cloneNode(true);
-
-  tpl.querySelector("#holiday-label").textContent =
-    `${HOLIDAY.title.toUpperCase()} ${HOLIDAY.subtitle}`;
-
-  tpl.querySelector("#app-title").innerHTML =
-    HOLIDAY.appTitle.replace(" ", "<br />");
-
-  const grid = tpl.querySelector("#profile-grid");
-
-  Object.entries(PROFILES).forEach(([id, profile]) => {
-    const button = document.createElement("button");
-    button.className = "profile-card";
-    button.style.background =
-      `linear-gradient(145deg, ${profile.colours[0]}, ${profile.colours[1]})`;
-
-    button.innerHTML = `
-      <span class="profile-icon">${profile.icon}</span>
-      <strong>${profile.name}</strong>
-      <small>${profile.role}</small>
-    `;
-
-    button.onclick = () => {
-      state.profileId = id;
-      localStorage.setItem("family-adventure-profile", id);
-      renderDashboard();
-    };
-
-    grid.appendChild(button);
+  const tpl=document.getElementById("profile-picker-template").content.cloneNode(true);
+  tpl.querySelector("#holiday-label").textContent=`${HOLIDAY.title.toUpperCase()} ${HOLIDAY.subtitle}`;
+  tpl.querySelector("#app-title").innerHTML=HOLIDAY.appTitle.replace(" ","<br />");
+  const grid=tpl.querySelector("#profile-grid");
+  Object.entries(PROFILES).forEach(([id,profile])=>{
+    const button=document.createElement("button"); button.className="profile-card";
+    button.style.background=`linear-gradient(145deg, ${profile.colours[0]}, ${profile.colours[1]})`;
+    button.innerHTML=`<span class="profile-icon">${profile.icon}</span><strong>${profile.name}</strong><small>${profile.role}</small>`;
+    button.onclick=()=>renderPinScreen(id,false); grid.appendChild(button);
   });
-
-  tpl.querySelector("#open-admin-from-picker").onclick = () =>
-    renderAdmin("picker");
-
   app.replaceChildren(tpl);
+}
+
+function renderPinScreen(profileId,parentOverride=false){
+  const profile=PROFILES[profileId]; if(!profile)return renderPicker(); setTheme(profile);
+  const tpl=document.getElementById("pin-template").content.cloneNode(true);
+  const input=tpl.querySelector("#explorer-pin"), dots=[...tpl.querySelectorAll("#pin-dots span")], submit=tpl.querySelector("#submit-pin"), error=tpl.querySelector("#pin-error");
+  tpl.querySelector("#pin-profile-icon").textContent=profile.icon; tpl.querySelector("#pin-profile-name").textContent=profile.name;
+  if(parentOverride){tpl.querySelector("#pin-copy").textContent=`Enter the Parent PIN to unlock ${profile.name}.`; submit.textContent="Unlock with Parent PIN"; input.maxLength=8;}
+  const update=()=>dots.forEach((d,i)=>d.classList.toggle("filled",i<input.value.length));
+  tpl.querySelectorAll("[data-number]").forEach(b=>b.onclick=()=>{if(input.value.length<Number(input.maxLength)){input.value+=b.dataset.number;update();}});
+  tpl.querySelector("#pin-clear").onclick=()=>{input.value="";update();}; tpl.querySelector("#pin-delete").onclick=()=>{input.value=input.value.slice(0,-1);update();};
+  tpl.querySelector("#back-to-picker").onclick=renderPicker; tpl.querySelector("#parent-override").onclick=()=>renderPinScreen(profileId,!parentOverride);
+  const check=async()=>{error.classList.add("hidden"); const pin=input.value.trim(); if(pin.length<4){error.textContent="Enter at least four digits.";error.classList.remove("hidden");return;} submit.disabled=true;submit.textContent="Checking...";
+    try{const fn=parentOverride?"verify_parent_pin":"verify_explorer_pin"; const args=parentOverride?{entered_pin:pin}:{explorer_id:profileId,entered_pin:pin}; const {data,error:rpcError}=await supabaseClient.rpc(fn,args); if(rpcError)throw rpcError;if(!data)throw new Error("That PIN is not correct."); state.profileId=profileId;localStorage.setItem("family-adventure-active-explorer",profileId);renderDashboard();}
+    catch(e){error.textContent=e.message;error.classList.remove("hidden");input.value="";update();submit.disabled=false;submit.textContent=parentOverride?"Unlock with Parent PIN":"Check in";}};
+  submit.onclick=check; input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();check();}}); app.replaceChildren(tpl); input.focus();
 }
 
 async function renderDashboard() {
@@ -222,16 +211,12 @@ async function renderDashboard() {
   tpl.querySelector("#secret-mission").textContent = getSecretMission(state.profileId);
   buildSecretChecklist(tpl.querySelector("#secret-checklist"));
 
-  tpl.querySelector("#switch-profile").onclick = () => {
-    localStorage.removeItem("family-adventure-profile");
-    state.profileId = null;
-    renderPicker();
-  };
+  tpl.querySelector("#switch-profile").onclick = () => { localStorage.removeItem("family-adventure-active-explorer"); state.profileId=null; state.parentUnlocked=false; state.parentToken=null; renderPicker(); };
 
   tpl.querySelector("#prev-day").onclick = () => changeDay(-1);
   tpl.querySelector("#next-day").onclick = () => changeDay(1);
   tpl.querySelector("#open-gallery").onclick = renderGallery;
-  tpl.querySelector("#open-admin").onclick = () => renderAdmin("dashboard");
+  tpl.querySelector("#open-parent-mode").onclick = () => renderParentMode("dashboard");
 
   const secretButton = tpl.querySelector("#reveal-secret");
   const secretContent = tpl.querySelector("#secret-content");
@@ -555,17 +540,14 @@ async function saveSecretPhoto(pairing, file, row) {
   }
 }
 
-function renderAdmin(returnTo = "dashboard") {
+function renderParentMode(returnTo = "dashboard") {
   const tpl = document
-    .getElementById("admin-template")
+    .getElementById("parent-template")
     .content.cloneNode(true);
 
-  const backButton = tpl.querySelector("#back-from-admin");
-  const pinInput = tpl.querySelector("#admin-pin");
-  const unlockButton = tpl.querySelector("#unlock-admin");
-  const error = tpl.querySelector("#admin-error");
-  const adminLock = tpl.querySelector("#admin-lock");
-  const adminEditor = tpl.querySelector("#admin-editor");
+  const backButton = tpl.querySelector("#back-from-parent");
+  const pinInput = tpl.querySelector("#parent-pin");
+  const unlockButton = tpl.querySelector("#unlock-parent");
 
   backButton.onclick = () => {
     if (returnTo === "picker" || !state.profileId) {
@@ -575,19 +557,50 @@ function renderAdmin(returnTo = "dashboard") {
     }
   };
 
-  const unlock = () => {
-    if (pinInput.value !== String(cfg.adminPin || "")) {
-      error.classList.remove("hidden");
-      return;
-    }
+  // Put the template into the real document before attempting
+  // to populate any of its dynamic forms.
+  app.replaceChildren(tpl);
 
+  const parentLock = document.getElementById("parent-lock");
+  const parentContent = document.getElementById("parent-content");
+  const error = document.getElementById("parent-error");
+
+  const unlock = async () => {
     error.classList.add("hidden");
-    adminLock.classList.add("hidden");
-    adminEditor.classList.remove("hidden");
-    initialiseAdminTabs();
+    unlockButton.disabled = true;
+    unlockButton.textContent = "Checking...";
+
+    try {
+      const { data, error: rpcError } = await supabaseClient.rpc(
+        "create_parent_session",
+        {
+          entered_pin: pinInput.value.trim()
+        }
+      );
+
+      if (rpcError) throw rpcError;
+
+      if (!data) {
+        throw new Error("That Parent PIN is not correct.");
+      }
+
+      state.parentUnlocked = true;
+      state.parentToken = data;
+
+      parentLock.classList.add("hidden");
+      parentContent.classList.remove("hidden");
+
+      initialiseParentTabs();
+    } catch (unlockError) {
+      error.textContent = unlockError.message;
+      error.classList.remove("hidden");
+      unlockButton.disabled = false;
+      unlockButton.textContent = "Open Parent Mode";
+    }
   };
 
   unlockButton.onclick = unlock;
+
   pinInput.addEventListener("keydown", event => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -595,10 +608,15 @@ function renderAdmin(returnTo = "dashboard") {
     }
   });
 
-  app.replaceChildren(tpl);
+  if (state.parentUnlocked && state.parentToken) {
+    parentLock.classList.add("hidden");
+    parentContent.classList.remove("hidden");
+    initialiseParentTabs();
+  } else {
+    pinInput.focus();
+  }
 }
-
-function initialiseAdminTabs() {
+function initialiseParentTabs() {
   const buttons = [...document.querySelectorAll(".admin-tab")];
 
   buttons.forEach(button => {
@@ -609,199 +627,27 @@ function initialiseAdminTabs() {
       document.querySelectorAll(".admin-panel").forEach(panel => {
         panel.classList.toggle(
           "hidden",
-          panel.id !== `admin-panel-${button.dataset.tab}`
+          panel.id !== `parent-panel-${button.dataset.tab}`
         );
       });
     };
   });
 
+  buildParentProgress();
   buildDailyMissionEditor();
   buildAssignmentEditor();
-}
+  buildPinManager();
 
-function buildDailyMissionEditor() {
-  const form = document.getElementById("daily-missions-form");
-  form.replaceChildren();
+  const refreshButton = document.getElementById("refresh-progress");
 
-  DAYS.forEach((originalDay, dayIndex) => {
-    const day = getDay(dayIndex);
-    const card = document.createElement("section");
-    card.className = "mission-editor-card daily-editor-card";
-
-    card.innerHTML = `
-      <div class="mission-editor-heading">
-        <span class="mission-editor-icon">${dayIndex + 1}</span>
-        <div>
-          <strong>${originalDay.day}</strong>
-          <small>Daily mission and diary prompt</small>
-        </div>
-      </div>
-
-      <label>
-        <span>Theme</span>
-        <input name="theme-${dayIndex}" maxlength="80">
-      </label>
-
-      <label>
-        <span>Photo instruction</span>
-        <textarea name="photo-${dayIndex}" rows="3" maxlength="240"></textarea>
-      </label>
-
-      <label>
-        <span>Video question</span>
-        <textarea name="video-${dayIndex}" rows="2" maxlength="180"></textarea>
-      </label>
-    `;
-
-    card.querySelector(`[name="theme-${dayIndex}"]`).value = day.theme;
-    card.querySelector(`[name="photo-${dayIndex}"]`).value = day.photo;
-    card.querySelector(`[name="video-${dayIndex}"]`).value = day.video;
-    form.appendChild(card);
-  });
-
-  document.getElementById("save-daily-missions").onclick =
-    saveDailyMissionOverrides;
-}
-
-async function saveDailyMissionOverrides() {
-  const button = document.getElementById("save-daily-missions");
-  const result = document.getElementById("daily-save-result");
-  const form = document.getElementById("daily-missions-form");
-
-  button.disabled = true;
-  button.textContent = "Saving...";
-
-  try {
-    const rows = DAYS.map((day, dayIndex) => ({
-      holiday_id: HOLIDAY.id,
-      day_index: dayIndex,
-      theme: form.elements[`theme-${dayIndex}`].value.trim(),
-      photo_instruction:
-        form.elements[`photo-${dayIndex}`].value.trim(),
-      video_question:
-        form.elements[`video-${dayIndex}`].value.trim()
-    }));
-
-    if (
-      rows.some(
-        row =>
-          !row.theme ||
-          !row.photo_instruction ||
-          !row.video_question
-      )
-    ) {
-      throw new Error("Every daily field must be completed.");
-    }
-
-    const { data, error } = await supabaseClient
-      .from("daily_missions")
-      .upsert(rows, { onConflict: "holiday_id,day_index" })
-      .select();
-
-    if (error) throw error;
-
-    DAILY_OVERRIDES = Object.fromEntries(
-      data.map(row => [row.day_index, row])
-    );
-
-    result.textContent = "Daily missions saved ✓";
-    result.classList.remove("hidden");
-  } catch (error) {
-    result.textContent = `Could not save: ${error.message}`;
-    result.classList.remove("hidden");
-  } finally {
-    button.disabled = false;
-    button.textContent = "Save daily missions";
+  if (refreshButton) {
+    refreshButton.onclick = buildParentProgress;
   }
 }
-
-function buildAssignmentEditor() {
-  const form = document.getElementById("assignments-form");
-  form.replaceChildren();
-
-  Object.entries(PROFILES).forEach(([explorerId, explorer]) => {
-    const card = document.createElement("section");
-    card.className = "mission-editor-card";
-
-    const options = Object.entries(PROFILES)
-      .map(
-        ([subjectId, subject]) =>
-          `<option value="${subjectId}">${subject.name}</option>`
-      )
-      .join("");
-
-    card.innerHTML = `
-      <div class="mission-editor-heading">
-        <span class="mission-editor-icon">${explorer.icon}</span>
-        <div>
-          <strong>${explorer.name}</strong>
-          <small>Who must they photograph with everyone?</small>
-        </div>
-      </div>
-      <label>
-        <span>Assigned subject</span>
-        <select name="${explorerId}">${options}</select>
-      </label>
-      <p class="assignment-preview"></p>
-    `;
-
-    const select = card.querySelector("select");
-    select.value =
-      SECRET_ASSIGNMENTS[explorerId]?.subject_profile_id || explorerId;
-
-    const updatePreview = () => {
-      const subjectName = PROFILES[select.value].name;
-      card.querySelector(".assignment-preview").textContent =
-        `${explorer.name} must collect five photos of ${subjectName}, one with each other family member.`;
-    };
-
-    select.onchange = updatePreview;
-    updatePreview();
-    form.appendChild(card);
-  });
-
-  document.getElementById("save-assignments").onclick =
-    saveSecretAssignments;
-}
-
-async function saveSecretAssignments() {
-  const button = document.getElementById("save-assignments");
-  const result = document.getElementById("assignment-save-result");
-  const form = document.getElementById("assignments-form");
-
-  button.disabled = true;
-  button.textContent = "Saving...";
-
-  try {
-    const rows = Object.keys(PROFILES).map(explorerId => ({
-      holiday_id: HOLIDAY.id,
-      explorer_profile_id: explorerId,
-      subject_profile_id: form.elements[explorerId].value
-    }));
-
-    const { data, error } = await supabaseClient
-      .from("secret_assignments")
-      .upsert(rows, {
-        onConflict: "holiday_id,explorer_profile_id"
-      })
-      .select();
-
-    if (error) throw error;
-
-    SECRET_ASSIGNMENTS = Object.fromEntries(
-      data.map(row => [row.explorer_profile_id, row])
-    );
-
-    result.textContent = "Secret assignments saved ✓";
-    result.classList.remove("hidden");
-  } catch (error) {
-    result.textContent = `Could not save: ${error.message}`;
-    result.classList.remove("hidden");
-  } finally {
-    button.disabled = false;
-    button.textContent = "Save secret assignments";
-  }
-}
+async function buildParentProgress(){const grid=document.getElementById("parent-progress-grid");if(!grid)return;grid.innerHTML='<p class="empty-state">Loading progress...</p>';const [d,s]=await Promise.all([supabaseClient.from("entries").select("profile_id,day_index,media_type").eq("media_type","photo"),supabaseClient.from("secret_photos").select("explorer_profile_id,partner_profile_id").eq("holiday_id",HOLIDAY.id)]);if(d.error||s.error){grid.innerHTML='<p class="admin-error">Could not load progress.</p>';return;}grid.replaceChildren();Object.entries(PROFILES).forEach(([id,p])=>{const photos=new Set((d.data||[]).filter(x=>x.profile_id===id).map(x=>x.day_index)).size;let videos=0;for(let i=0;i<DAYS.length;i++)if(localStorage.getItem(`family-adventure-${HOLIDAY.id}-${id}-${i}-video`))videos++;const secrets=new Set((s.data||[]).filter(x=>x.explorer_profile_id===id).map(x=>x.partner_profile_id)).size;const card=document.createElement("article");card.className="parent-progress-card";card.innerHTML=`<div class="parent-progress-heading"><span>${p.icon}</span><div><strong>${p.name}</strong><small>${p.role}</small></div></div><div class="parent-progress-stats"><div><strong>${photos}/${DAYS.length}</strong><span>daily photos</span></div><div><strong>${videos}/${DAYS.length}</strong><span>videos on this device</span></div><div><strong>${secrets}/5</strong><span>secret photos</span></div></div>`;grid.appendChild(card);});}
+function buildPinManager(){const form=document.getElementById("pin-manager-form");if(!form)return;form.replaceChildren();Object.entries(PROFILES).forEach(([id,p])=>{const c=document.createElement("label");c.className="mission-editor-card pin-manager-card";c.innerHTML=`<div class="mission-editor-heading"><span class="mission-editor-icon">${p.icon}</span><div><strong>${p.name}</strong><small>Leave blank to keep current PIN</small></div></div><input name="${id}" type="password" inputmode="numeric" minlength="4" maxlength="8" placeholder="New PIN">`;form.appendChild(c);});document.getElementById("save-pin-changes").onclick=saveExplorerPinChanges;document.getElementById("change-parent-pin").onclick=changeParentPin;}
+async function saveExplorerPinChanges(){const form=document.getElementById("pin-manager-form"),button=document.getElementById("save-pin-changes"),result=document.getElementById("pin-save-result");button.disabled=true;button.textContent="Saving...";try{const changes=Object.keys(PROFILES).map(id=>({id,pin:form.elements[id].value.trim()})).filter(x=>x.pin);if(!changes.length)throw new Error("Enter at least one new PIN.");for(const c of changes){if(!/^\d{4,8}$/.test(c.pin))throw new Error(`${PROFILES[c.id].name}'s PIN must be 4 to 8 digits.`);const {data,error}=await supabaseClient.rpc("set_explorer_pin",{explorer_id:c.id,new_pin:c.pin,parent_token:state.parentToken});if(error)throw error;if(!data)throw new Error("Parent Mode authorisation expired.");}form.reset();result.textContent="Explorer PINs updated ✓";result.classList.remove("hidden");}catch(e){result.textContent=`Could not save: ${e.message}`;result.classList.remove("hidden");}finally{button.disabled=false;button.textContent="Save changed PINs";}}
+async function changeParentPin(){const input=document.getElementById("new-parent-pin"),button=document.getElementById("change-parent-pin"),result=document.getElementById("parent-pin-result"),pin=input.value.trim();if(!/^\d{4,8}$/.test(pin)){result.textContent="Parent PIN must be 4 to 8 digits.";result.classList.remove("hidden");return;}button.disabled=true;button.textContent="Changing...";try{const {data,error}=await supabaseClient.rpc("set_parent_pin",{new_pin:pin,parent_token:state.parentToken});if(error)throw error;if(!data)throw new Error("Parent Mode authorisation expired.");input.value="";state.parentUnlocked=false;state.parentToken=null;result.textContent="Parent PIN changed ✓. Re-open Parent Mode next time.";result.classList.remove("hidden");}catch(e){result.textContent=`Could not change PIN: ${e.message}`;result.classList.remove("hidden");}finally{button.disabled=false;button.textContent="Change Parent PIN";}}
 
 async function renderGallery() {
   const tpl = document
@@ -900,7 +746,7 @@ async function initialiseApp() {
 
     document.title = HOLIDAY.appTitle;
 
-    state.profileId ? renderDashboard() : renderPicker();
+    state.profileId && PROFILES[state.profileId] ? renderDashboard() : renderPicker();
   } catch (error) {
     console.error(error);
 
