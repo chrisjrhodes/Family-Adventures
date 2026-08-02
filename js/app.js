@@ -422,7 +422,7 @@ function buildSecretChecklist(container) {
           ? `<img src="${existing.media_url}" alt="${pairing.subjectName} and ${pairing.partnerName}">`
           : `<label class="secret-upload-button">
                Add photo
-               <input type="file" accept="image/*" capture="environment">
+               <input type="file" accept="image/*">
              </label>`
       }
     `;
