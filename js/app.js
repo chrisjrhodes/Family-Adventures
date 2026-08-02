@@ -1,5 +1,20 @@
 import { loadAppData } from "./data.js";
 
+import {
+  state,
+  setActiveExplorer,
+  clearActiveExplorer,
+  setActiveDay,
+  setParentSession,
+  clearParentSession
+} from "./state.js";
+
+import {
+  hasSupabase,
+  supabaseClient,
+  requireSupabase
+} from "./supabase-client.js";
+
 const app = document.getElementById("app");
 const cfg = window.APP_CONFIG || {};
 
@@ -10,23 +25,6 @@ let MISSION_OVERRIDES = {};
 let DAILY_OVERRIDES = {};
 let SECRET_ASSIGNMENTS = {};
 let SECRET_PHOTOS = [];
-
-const hasSupabase = Boolean(
-  cfg.supabaseUrl &&
-  cfg.supabaseAnonKey &&
-  !cfg.supabaseUrl.includes("YOUR_")
-);
-
-const supabaseClient = hasSupabase
-  ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey)
-  : null;
-
-const state = {
-  profileId: localStorage.getItem("family-adventure-active-explorer"),
-  pendingProfileId: null,
-  dayIndex: Number(localStorage.getItem("family-adventure-day") || 0),
-  photoFile: null, galleryDay: 0, parentUnlocked: false, parentToken: null
-};
 
 function setTheme(profile) {
   document.documentElement.style.setProperty("--accent", profile.colours[0]);
@@ -179,10 +177,87 @@ function renderPinScreen(profileId,parentOverride=false){
   tpl.querySelectorAll("[data-number]").forEach(b=>b.onclick=()=>{if(input.value.length<Number(input.maxLength)){input.value+=b.dataset.number;update();}});
   tpl.querySelector("#pin-clear").onclick=()=>{input.value="";update();}; tpl.querySelector("#pin-delete").onclick=()=>{input.value=input.value.slice(0,-1);update();};
   tpl.querySelector("#back-to-picker").onclick=renderPicker; tpl.querySelector("#parent-override").onclick=()=>renderPinScreen(profileId,!parentOverride);
-  const check=async()=>{error.classList.add("hidden"); const pin=input.value.trim(); if(pin.length<4){error.textContent="Enter at least four digits.";error.classList.remove("hidden");return;} submit.disabled=true;submit.textContent="Checking...";
-    try{const fn=parentOverride?"verify_parent_pin":"verify_explorer_pin"; const args=parentOverride?{entered_pin:pin}:{explorer_id:profileId,entered_pin:pin}; const {data,error:rpcError}=await supabaseClient.rpc(fn,args); if(rpcError)throw rpcError;if(!data)throw new Error("That PIN is not correct."); state.profileId=profileId;localStorage.setItem("family-adventure-active-explorer",profileId);renderDashboard();}
-    catch(e){error.textContent=e.message;error.classList.remove("hidden");input.value="";update();submit.disabled=false;submit.textContent=parentOverride?"Unlock with Parent PIN":"Check in";}};
-  submit.onclick=check; input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();check();}}); app.replaceChildren(tpl); input.focus();
+  const check = async () => {
+  error.classList.add("hidden");
+
+  const pin = input.value.trim();
+
+  if (pin.length < 4) {
+    error.textContent = "Enter at least four digits.";
+    error.classList.remove("hidden");
+    return;
+  }
+
+  submit.disabled = true;
+  submit.textContent = "Checking...";
+
+  try {
+    const client = requireSupabase();
+
+    const functionName = parentOverride
+      ? "verify_parent_pin"
+      : "verify_explorer_pin";
+
+    const args = parentOverride
+      ? {
+          entered_pin: pin
+        }
+      : {
+          explorer_id: profileId,
+          entered_pin: pin
+        };
+
+    console.log("Checking Explorer PIN", {
+      functionName,
+      profileId
+    });
+
+    const { data, error: rpcError } = await client.rpc(
+      functionName,
+      args
+    );
+
+    console.log("PIN response", {
+      data,
+      rpcError
+    });
+
+    if (rpcError) {
+      throw rpcError;
+    }
+
+    if (data !== true) {
+      throw new Error("That PIN is not correct.");
+    }
+
+    setActiveExplorer(profileId);
+    renderDashboard();
+  } catch (checkError) {
+    console.error("Explorer check-in failed", checkError);
+
+    error.textContent =
+      checkError?.message || "Could not check the PIN.";
+
+    error.classList.remove("hidden");
+    input.value = "";
+    update();
+  } finally {
+    submit.disabled = false;
+    submit.textContent = parentOverride
+      ? "Unlock with Parent PIN"
+      : "Check in";
+  }
+};
+
+  submit.onclick = check;
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      check();
+    }
+  });
+  app.replaceChildren(tpl);
+  input.focus();
 }
 
 async function renderDashboard() {
@@ -211,7 +286,7 @@ async function renderDashboard() {
   tpl.querySelector("#secret-mission").textContent = getSecretMission(state.profileId);
   buildSecretChecklist(tpl.querySelector("#secret-checklist"));
 
-  tpl.querySelector("#switch-profile").onclick = () => { localStorage.removeItem("family-adventure-active-explorer"); state.profileId=null; state.parentUnlocked=false; state.parentToken=null; renderPicker(); };
+  tpl.querySelector("#switch-profile").onclick = () => { clearActiveExplorer(); renderPicker(); };
 
   tpl.querySelector("#prev-day").onclick = () => changeDay(-1);
   tpl.querySelector("#next-day").onclick = () => changeDay(1);
@@ -262,8 +337,9 @@ async function renderDashboard() {
 }
 
 function changeDay(delta) {
-  state.dayIndex = (state.dayIndex + delta + DAYS.length) % DAYS.length;
-  localStorage.setItem("family-adventure-day", state.dayIndex);
+setActiveDay(
+  (state.dayIndex + delta + DAYS.length) % DAYS.length
+);
   state.photoFile = null;
   renderDashboard();
 }
