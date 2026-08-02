@@ -11,11 +11,6 @@ export const state = {
   parentToken: null
 };
 
-export function setActiveExplorer(profileId) {
-  state.profileId = profileId;
-  state.pendingProfileId = null;
-  localStorage.setItem(ACTIVE_EXPLORER_KEY, profileId);
-}
 
 export function clearActiveExplorer() {
   state.profileId = null;
@@ -23,6 +18,12 @@ export function clearActiveExplorer() {
   state.parentUnlocked = false;
   state.parentToken = null;
   localStorage.removeItem(ACTIVE_EXPLORER_KEY);
+}
+
+export function setActiveExplorer(profileId) {
+  state.profileId = profileId;
+  state.pendingProfileId = null;
+  localStorage.setItem(ACTIVE_EXPLORER_KEY, profileId);
 }
 
 export function setActiveDay(dayIndex) {
