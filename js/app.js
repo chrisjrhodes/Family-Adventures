@@ -207,20 +207,10 @@ function renderPinScreen(profileId,parentOverride=false){
           entered_pin: pin
         };
 
-    console.log("Checking Explorer PIN", {
-      functionName,
-      profileId
-    });
-
     const { data, error: rpcError } = await client.rpc(
       functionName,
       args
     );
-
-    console.log("PIN response", {
-      data,
-      rpcError
-    });
 
     if (rpcError) {
       throw rpcError;
@@ -337,9 +327,10 @@ async function renderDashboard() {
 }
 
 function changeDay(delta) {
-setActiveDay(
-  (state.dayIndex + delta + DAYS.length) % DAYS.length
-);
+  setActiveDay(
+    (state.dayIndex + delta + DAYS.length) % DAYS.length
+  );
+
   state.photoFile = null;
   renderDashboard();
 }
@@ -660,8 +651,7 @@ function renderParentMode(returnTo = "dashboard") {
         throw new Error("That Parent PIN is not correct.");
       }
 
-      state.parentUnlocked = true;
-      state.parentToken = data;
+      setParentSession(data);
 
       parentLock.classList.add("hidden");
       parentContent.classList.remove("hidden");
