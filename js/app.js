@@ -2,7 +2,6 @@ import { loadAppData } from "./data.js";
 
 import {
   state,
-  setActiveExplorer,
   clearActiveExplorer,
   setActiveDay,
   setParentSession,
@@ -12,8 +11,9 @@ import {
 import {
   hasSupabase,
   supabaseClient,
-  requireSupabase
 } from "./supabase-client.js";
+
+import { createAccessController } from "./access.js";
 
 const app = document.getElementById("app");
 const cfg = window.APP_CONFIG || {};
@@ -25,6 +25,7 @@ let MISSION_OVERRIDES = {};
 let DAILY_OVERRIDES = {};
 let SECRET_ASSIGNMENTS = {};
 let SECRET_PHOTOS = [];
+let access;
 
 function setTheme(profile) {
   document.documentElement.style.setProperty("--accent", profile.colours[0]);
@@ -151,108 +152,11 @@ function getSecretPhoto(explorerProfileId, partnerId) {
   );
 }
 
-function renderPicker() {
-  document.documentElement.style.setProperty("--accent", "#244735");
-  document.documentElement.style.setProperty("--accent-2", "#b57a45");
-  const tpl=document.getElementById("profile-picker-template").content.cloneNode(true);
-  tpl.querySelector("#holiday-label").textContent=`${HOLIDAY.title.toUpperCase()} ${HOLIDAY.subtitle}`;
-  tpl.querySelector("#app-title").innerHTML=HOLIDAY.appTitle.replace(" ","<br />");
-  const grid=tpl.querySelector("#profile-grid");
-  Object.entries(PROFILES).forEach(([id,profile])=>{
-    const button=document.createElement("button"); button.className="profile-card";
-    button.style.background=`linear-gradient(145deg, ${profile.colours[0]}, ${profile.colours[1]})`;
-    button.innerHTML=`<span class="profile-icon">${profile.icon}</span><strong>${profile.name}</strong><small>${profile.role}</small>`;
-    button.onclick=()=>renderPinScreen(id,false); grid.appendChild(button);
-  });
-  app.replaceChildren(tpl);
-}
 
-function renderPinScreen(profileId,parentOverride=false){
-  const profile=PROFILES[profileId]; if(!profile)return renderPicker(); setTheme(profile);
-  const tpl=document.getElementById("pin-template").content.cloneNode(true);
-  const input=tpl.querySelector("#explorer-pin"), dots=[...tpl.querySelectorAll("#pin-dots span")], submit=tpl.querySelector("#submit-pin"), error=tpl.querySelector("#pin-error");
-  tpl.querySelector("#pin-profile-icon").textContent=profile.icon; tpl.querySelector("#pin-profile-name").textContent=profile.name;
-  if(parentOverride){tpl.querySelector("#pin-copy").textContent=`Enter the Parent PIN to unlock ${profile.name}.`; submit.textContent="Unlock with Parent PIN"; input.maxLength=8;}
-  const update=()=>dots.forEach((d,i)=>d.classList.toggle("filled",i<input.value.length));
-  tpl.querySelectorAll("[data-number]").forEach(b=>b.onclick=()=>{if(input.value.length<Number(input.maxLength)){input.value+=b.dataset.number;update();}});
-  tpl.querySelector("#pin-clear").onclick=()=>{input.value="";update();}; tpl.querySelector("#pin-delete").onclick=()=>{input.value=input.value.slice(0,-1);update();};
-  tpl.querySelector("#back-to-picker").onclick=renderPicker; tpl.querySelector("#parent-override").onclick=()=>renderPinScreen(profileId,!parentOverride);
-  const check = async () => {
-  error.classList.add("hidden");
-
-  const pin = input.value.trim();
-
-  if (pin.length < 4) {
-    error.textContent = "Enter at least four digits.";
-    error.classList.remove("hidden");
-    return;
-  }
-
-  submit.disabled = true;
-  submit.textContent = "Checking...";
-
-  try {
-    const client = requireSupabase();
-
-    const functionName = parentOverride
-      ? "verify_parent_pin"
-      : "verify_explorer_pin";
-
-    const args = parentOverride
-      ? {
-          entered_pin: pin
-        }
-      : {
-          explorer_id: profileId,
-          entered_pin: pin
-        };
-
-    const { data, error: rpcError } = await client.rpc(
-      functionName,
-      args
-    );
-
-    if (rpcError) {
-      throw rpcError;
-    }
-
-    if (data !== true) {
-      throw new Error("That PIN is not correct.");
-    }
-
-    setActiveExplorer(profileId);
-    renderDashboard();
-  } catch (checkError) {
-    console.error("Explorer check-in failed", checkError);
-
-    error.textContent =
-      checkError?.message || "Could not check the PIN.";
-
-    error.classList.remove("hidden");
-    input.value = "";
-    update();
-  } finally {
-    submit.disabled = false;
-    submit.textContent = parentOverride
-      ? "Unlock with Parent PIN"
-      : "Check in";
-  }
-};
-
-  submit.onclick = check;
-  input.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      check();
-    }
-  });
-  app.replaceChildren(tpl);
-  input.focus();
-}
 
 async function renderDashboard() {
   const profile = PROFILES[state.profileId];
-  if (!profile) return renderPicker();
+  if (!profile) return access.renderPicker();
 
   setTheme(profile);
 
@@ -276,7 +180,7 @@ async function renderDashboard() {
   tpl.querySelector("#secret-mission").textContent = getSecretMission(state.profileId);
   buildSecretChecklist(tpl.querySelector("#secret-checklist"));
 
-  tpl.querySelector("#switch-profile").onclick = () => { clearActiveExplorer(); renderPicker(); };
+  tpl.querySelector("#switch-profile").onclick = () => { clearActiveExplorer(); access.renderPicker(); };
 
   tpl.querySelector("#prev-day").onclick = () => changeDay(-1);
   tpl.querySelector("#next-day").onclick = () => changeDay(1);
@@ -618,7 +522,7 @@ function renderParentMode(returnTo = "dashboard") {
 
   backButton.onclick = () => {
     if (returnTo === "picker" || !state.profileId) {
-      renderPicker();
+      access.renderPicker();
     } else {
       renderDashboard();
     }
@@ -810,9 +714,17 @@ async function initialiseApp() {
     SECRET_ASSIGNMENTS = missionData.assignments;
     SECRET_PHOTOS = missionData.secretPhotos;
 
+    access = createAccessController({
+      app,
+      getProfiles: () => PROFILES,
+      getHoliday: () => HOLIDAY,
+      setTheme,
+      onExplorerAuthenticated: async () => renderDashboard()
+    });
+
     document.title = HOLIDAY.appTitle;
 
-    state.profileId && PROFILES[state.profileId] ? renderDashboard() : renderPicker();
+    state.profileId && PROFILES[state.profileId] ? renderDashboard() : access.renderPicker();
   } catch (error) {
     console.error(error);
 
