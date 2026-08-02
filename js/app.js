@@ -615,6 +615,288 @@ function initialiseParentTabs() {
   }
 }
 async function buildParentProgress(){const grid=document.getElementById("parent-progress-grid");if(!grid)return;grid.innerHTML='<p class="empty-state">Loading progress...</p>';const [d,s]=await Promise.all([supabaseClient.from("entries").select("profile_id,day_index,media_type").eq("media_type","photo"),supabaseClient.from("secret_photos").select("explorer_profile_id,partner_profile_id").eq("holiday_id",HOLIDAY.id)]);if(d.error||s.error){grid.innerHTML='<p class="admin-error">Could not load progress.</p>';return;}grid.replaceChildren();Object.entries(PROFILES).forEach(([id,p])=>{const photos=new Set((d.data||[]).filter(x=>x.profile_id===id).map(x=>x.day_index)).size;let videos=0;for(let i=0;i<DAYS.length;i++)if(localStorage.getItem(`family-adventure-${HOLIDAY.id}-${id}-${i}-video`))videos++;const secrets=new Set((s.data||[]).filter(x=>x.explorer_profile_id===id).map(x=>x.partner_profile_id)).size;const card=document.createElement("article");card.className="parent-progress-card";card.innerHTML=`<div class="parent-progress-heading"><span>${p.icon}</span><div><strong>${p.name}</strong><small>${p.role}</small></div></div><div class="parent-progress-stats"><div><strong>${photos}/${DAYS.length}</strong><span>daily photos</span></div><div><strong>${videos}/${DAYS.length}</strong><span>videos on this device</span></div><div><strong>${secrets}/5</strong><span>secret photos</span></div></div>`;grid.appendChild(card);});}
+function buildDailyMissionEditor() {
+  const form = document.getElementById("daily-missions-form");
+
+  if (!form) return;
+
+  form.replaceChildren();
+
+  DAYS.forEach((originalDay, dayIndex) => {
+    const day = getDay(dayIndex);
+    const card = document.createElement("section");
+
+    card.className = "mission-editor-card daily-editor-card";
+
+    card.innerHTML = `
+      <div class="mission-editor-heading">
+        <span class="mission-editor-icon">${dayIndex + 1}</span>
+        <div>
+          <strong>${originalDay.day}</strong>
+          <small>Daily mission and video prompt</small>
+        </div>
+      </div>
+
+      <label>
+        <span>Theme</span>
+        <input
+          name="theme-${dayIndex}"
+          maxlength="80"
+        >
+      </label>
+
+      <label>
+        <span>Photo instruction</span>
+        <textarea
+          name="photo-${dayIndex}"
+          rows="3"
+          maxlength="240"
+        ></textarea>
+      </label>
+
+      <label>
+        <span>Video question</span>
+        <textarea
+          name="video-${dayIndex}"
+          rows="2"
+          maxlength="180"
+        ></textarea>
+      </label>
+    `;
+
+    card.querySelector(
+      `[name="theme-${dayIndex}"]`
+    ).value = day.theme;
+
+    card.querySelector(
+      `[name="photo-${dayIndex}"]`
+    ).value = day.photo;
+
+    card.querySelector(
+      `[name="video-${dayIndex}"]`
+    ).value = day.video;
+
+    form.appendChild(card);
+  });
+
+  const saveButton =
+    document.getElementById("save-daily-missions");
+
+  if (saveButton) {
+    saveButton.onclick = saveDailyMissionOverrides;
+  }
+}
+
+async function saveDailyMissionOverrides() {
+  const form =
+    document.getElementById("daily-missions-form");
+
+  const button =
+    document.getElementById("save-daily-missions");
+
+  const result =
+    document.getElementById("daily-save-result");
+
+  if (!form || !button || !result) return;
+
+  button.disabled = true;
+  button.textContent = "Saving...";
+  result.classList.add("hidden");
+
+  try {
+    const rows = DAYS.map((day, dayIndex) => ({
+      holiday_id: HOLIDAY.id,
+      day_index: dayIndex,
+      theme:
+        form.elements[`theme-${dayIndex}`].value.trim(),
+      photo_instruction:
+        form.elements[`photo-${dayIndex}`].value.trim(),
+      video_question:
+        form.elements[`video-${dayIndex}`].value.trim()
+    }));
+
+    const incomplete = rows.some(row =>
+      !row.theme ||
+      !row.photo_instruction ||
+      !row.video_question
+    );
+
+    if (incomplete) {
+      throw new Error(
+        "Every daily mission field must be completed."
+      );
+    }
+
+    const { data, error } = await supabaseClient
+      .from("daily_missions")
+      .upsert(rows, {
+        onConflict: "holiday_id,day_index"
+      })
+      .select();
+
+    if (error) throw error;
+
+    DAILY_OVERRIDES = Object.fromEntries(
+      data.map(row => [row.day_index, row])
+    );
+
+    result.textContent = "Daily missions saved ✓";
+    result.classList.remove("hidden");
+  } catch (error) {
+    console.error("Could not save daily missions", error);
+
+    result.textContent =
+      `Could not save: ${error.message}`;
+
+    result.classList.remove("hidden");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Save daily missions";
+  }
+}
+
+function buildAssignmentEditor() {
+  const form =
+    document.getElementById("assignments-form");
+
+  if (!form) return;
+
+  form.replaceChildren();
+
+  Object.entries(PROFILES).forEach(
+    ([explorerId, explorer]) => {
+      const card = document.createElement("section");
+
+      card.className = "mission-editor-card";
+
+      const options = Object.entries(PROFILES)
+        .map(
+          ([subjectId, subject]) =>
+            `<option value="${subjectId}">
+              ${subject.name}
+            </option>`
+        )
+        .join("");
+
+      card.innerHTML = `
+        <div class="mission-editor-heading">
+          <span class="mission-editor-icon">
+            ${explorer.icon}
+          </span>
+          <div>
+            <strong>${explorer.name}</strong>
+            <small>
+              Who must they photograph with everyone?
+            </small>
+          </div>
+        </div>
+
+        <label>
+          <span>Assigned subject</span>
+          <select name="${explorerId}">
+            ${options}
+          </select>
+        </label>
+
+        <p class="assignment-preview"></p>
+      `;
+
+      const select = card.querySelector("select");
+      const preview =
+        card.querySelector(".assignment-preview");
+
+      select.value =
+        SECRET_ASSIGNMENTS[explorerId]
+          ?.subject_profile_id || explorerId;
+
+      const updatePreview = () => {
+        const subjectName =
+          PROFILES[select.value].name;
+
+        preview.textContent =
+          `${explorer.name} must collect five photos ` +
+          `of ${subjectName}, one with each other ` +
+          `family member.`;
+      };
+
+      select.onchange = updatePreview;
+      updatePreview();
+
+      form.appendChild(card);
+    }
+  );
+
+  const saveButton =
+    document.getElementById("save-assignments");
+
+  if (saveButton) {
+    saveButton.onclick = saveSecretAssignments;
+  }
+}
+
+async function saveSecretAssignments() {
+  const form =
+    document.getElementById("assignments-form");
+
+  const button =
+    document.getElementById("save-assignments");
+
+  const result =
+    document.getElementById("assignment-save-result");
+
+  if (!form || !button || !result) return;
+
+  button.disabled = true;
+  button.textContent = "Saving...";
+  result.classList.add("hidden");
+
+  try {
+    const rows = Object.keys(PROFILES).map(
+      explorerId => ({
+        holiday_id: HOLIDAY.id,
+        explorer_profile_id: explorerId,
+        subject_profile_id:
+          form.elements[explorerId].value
+      })
+    );
+
+    const { data, error } = await supabaseClient
+      .from("secret_assignments")
+      .upsert(rows, {
+        onConflict:
+          "holiday_id,explorer_profile_id"
+      })
+      .select();
+
+    if (error) throw error;
+
+    SECRET_ASSIGNMENTS = Object.fromEntries(
+      data.map(row => [
+        row.explorer_profile_id,
+        row
+      ])
+    );
+
+    result.textContent =
+      "Secret assignments saved ✓";
+
+    result.classList.remove("hidden");
+  } catch (error) {
+    console.error(
+      "Could not save secret assignments",
+      error
+    );
+
+    result.textContent =
+      `Could not save: ${error.message}`;
+
+    result.classList.remove("hidden");
+  } finally {
+    button.disabled = false;
+    button.textContent =
+      "Save secret assignments";
+  }
+}
 function buildPinManager(){const form=document.getElementById("pin-manager-form");if(!form)return;form.replaceChildren();Object.entries(PROFILES).forEach(([id,p])=>{const c=document.createElement("label");c.className="mission-editor-card pin-manager-card";c.innerHTML=`<div class="mission-editor-heading"><span class="mission-editor-icon">${p.icon}</span><div><strong>${p.name}</strong><small>Leave blank to keep current PIN</small></div></div><input name="${id}" type="password" inputmode="numeric" minlength="4" maxlength="8" placeholder="New PIN">`;form.appendChild(c);});document.getElementById("save-pin-changes").onclick=saveExplorerPinChanges;document.getElementById("change-parent-pin").onclick=changeParentPin;}
 async function saveExplorerPinChanges(){const form=document.getElementById("pin-manager-form"),button=document.getElementById("save-pin-changes"),result=document.getElementById("pin-save-result");button.disabled=true;button.textContent="Saving...";try{const changes=Object.keys(PROFILES).map(id=>({id,pin:form.elements[id].value.trim()})).filter(x=>x.pin);if(!changes.length)throw new Error("Enter at least one new PIN.");for(const c of changes){if(!/^\d{4,8}$/.test(c.pin))throw new Error(`${PROFILES[c.id].name}'s PIN must be 4 to 8 digits.`);const {data,error}=await supabaseClient.rpc("set_explorer_pin",{explorer_id:c.id,new_pin:c.pin,parent_token:state.parentToken});if(error)throw error;if(!data)throw new Error("Parent Mode authorisation expired.");}form.reset();result.textContent="Explorer PINs updated ✓";result.classList.remove("hidden");}catch(e){result.textContent=`Could not save: ${e.message}`;result.classList.remove("hidden");}finally{button.disabled=false;button.textContent="Save changed PINs";}}
 async function changeParentPin(){const input=document.getElementById("new-parent-pin"),button=document.getElementById("change-parent-pin"),result=document.getElementById("parent-pin-result"),pin=input.value.trim();if(!/^\d{4,8}$/.test(pin)){result.textContent="Parent PIN must be 4 to 8 digits.";result.classList.remove("hidden");return;}button.disabled=true;button.textContent="Changing...";try{const {data,error}=await supabaseClient.rpc("set_parent_pin",{new_pin:pin,parent_token:state.parentToken});if(error)throw error;if(!data)throw new Error("Parent Mode authorisation expired.");input.value="";state.parentUnlocked=false;state.parentToken=null;result.textContent="Parent PIN changed ✓. Re-open Parent Mode next time.";result.classList.remove("hidden");}catch(e){result.textContent=`Could not change PIN: ${e.message}`;result.classList.remove("hidden");}finally{button.disabled=false;button.textContent="Change Parent PIN";}}
