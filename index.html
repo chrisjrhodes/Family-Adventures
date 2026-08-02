@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#244735" />
   <title>Family Adventure</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" href="styles.css?v=8" />
+  <link rel="stylesheet" href="styles.css?v=10" />
 </head>
 <body>
   <main id="app">
@@ -25,16 +25,39 @@
         <h1 id="app-title"></h1>
         <p class="intro">Seven days. Seven photo missions. One family story.</p>
       </div>
-      <p class="section-label">Choose your explorer</p>
+      <p class="section-label">Who is exploring today?</p>
       <div id="profile-grid" class="profile-grid"></div>
-      <button id="open-admin-from-picker" class="admin-link">⚙️ Manage secret missions</button>
+    </section>
+  </template>
+
+
+  <template id="pin-template">
+    <section class="screen pin-screen">
+      <button id="back-to-picker" class="icon-button pin-back" aria-label="Back">←</button>
+      <div class="pin-card">
+        <div id="pin-profile-icon" class="pin-profile-icon"></div>
+        <p class="eyebrow">EXPLORER CHECK-IN</p>
+        <h1 id="pin-profile-name"></h1>
+        <p id="pin-copy" class="intro">Enter your Explorer PIN.</p>
+        <div id="pin-dots" class="pin-dots"><span></span><span></span><span></span><span></span></div>
+        <input id="explorer-pin" class="pin-hidden-input" type="password" inputmode="numeric" maxlength="4" autocomplete="off">
+        <div class="pin-keypad">
+          <button data-number="1">1</button><button data-number="2">2</button><button data-number="3">3</button>
+          <button data-number="4">4</button><button data-number="5">5</button><button data-number="6">6</button>
+          <button data-number="7">7</button><button data-number="8">8</button><button data-number="9">9</button>
+          <button id="pin-clear" class="pin-secondary">Clear</button><button data-number="0">0</button><button id="pin-delete" class="pin-secondary">⌫</button>
+        </div>
+        <button id="submit-pin" class="gallery-button">Check in</button>
+        <p id="pin-error" class="admin-error hidden"></p>
+        <button id="parent-override" class="admin-link">Use Parent PIN instead</button>
+      </div>
     </section>
   </template>
 
   <template id="dashboard-template">
     <section class="screen dashboard-screen">
       <header class="topbar">
-        <button id="switch-profile" class="icon-button" aria-label="Switch profile">←</button>
+        <button id="switch-profile" class="icon-button" aria-label="End adventure">↩</button>
         <div>
           <p class="eyebrow">FAMILY ADVENTURE</p>
           <h2 id="welcome-title"></h2>
@@ -110,54 +133,25 @@
       </section>
 
       <button id="open-gallery" class="gallery-button">View tonight's memories</button>
-      <button id="open-admin" class="admin-link">⚙️ Manage secret missions</button>
+      <button id="open-parent-mode" class="admin-link">🔐 Parent Mode</button>
     </section>
   </template>
 
 
-  <template id="admin-template">
+  <template id="parent-template">
     <section class="screen admin-screen">
-      <header class="topbar">
-        <button id="back-from-admin" class="icon-button" aria-label="Back">←</button>
-        <div>
-          <p class="eyebrow">PARENT TOOLS</p>
-          <h2>Secret missions</h2>
-        </div>
-      </header>
-
-      <section id="admin-lock" class="card-panel admin-lock">
-        <div class="prompt-icon">🔐</div>
-        <div>
-          <p class="eyebrow">ADMIN ACCESS</p>
-          <h3>Enter the family PIN</h3>
-          <p>This keeps accidental little fingers out of the mission editor.</p>
-        </div>
-        <input id="admin-pin" class="admin-input" type="password" inputmode="numeric" maxlength="8" placeholder="PIN" />
-        <button id="unlock-admin" class="primary-button">Unlock</button>
-        <p id="admin-error" class="admin-error hidden">That PIN is not correct.</p>
+      <header class="topbar"><button id="back-from-parent" class="icon-button">←</button><div><p class="eyebrow">PARENT MODE</p><h2>Family dashboard</h2></div></header>
+      <section id="parent-lock" class="card-panel admin-lock">
+        <div class="prompt-icon">🔐</div><div><p class="eyebrow">PARENT ACCESS</p><h3>Enter the Parent PIN</h3><p>Progress, missions and PIN management.</p></div>
+        <input id="parent-pin" class="admin-input" type="password" inputmode="numeric" maxlength="8" placeholder="Parent PIN">
+        <button id="unlock-parent" class="primary-button">Open Parent Mode</button><p id="parent-error" class="admin-error hidden"></p>
       </section>
-
-      <section id="admin-editor" class="hidden">
-        <div class="admin-note">
-          Changes save to Supabase and appear on every device after refresh.
-        </div>
-
-        <nav class="admin-tabs">
-          <button class="admin-tab active" data-tab="daily">Daily missions</button>
-          <button class="admin-tab" data-tab="secret">Secret assignments</button>
-        </nav>
-
-        <section id="admin-panel-daily" class="admin-panel">
-          <form id="daily-missions-form" class="mission-editor-list"></form>
-          <button id="save-daily-missions" class="gallery-button">Save daily missions</button>
-          <p id="daily-save-result" class="save-result hidden"></p>
-        </section>
-
-        <section id="admin-panel-secret" class="admin-panel hidden">
-          <form id="assignments-form" class="mission-editor-list"></form>
-          <button id="save-assignments" class="gallery-button">Save secret assignments</button>
-          <p id="assignment-save-result" class="save-result hidden"></p>
-        </section>
+      <section id="parent-content" class="hidden">
+        <nav class="admin-tabs parent-tabs"><button class="admin-tab active" data-tab="progress">Progress</button><button class="admin-tab" data-tab="daily">Daily missions</button><button class="admin-tab" data-tab="secret">Secret assignments</button><button class="admin-tab" data-tab="pins">Explorer PINs</button></nav>
+        <section id="parent-panel-progress" class="admin-panel"><div id="parent-progress-grid" class="parent-progress-grid"></div><button id="refresh-progress" class="gallery-button">Refresh progress</button></section>
+        <section id="parent-panel-daily" class="admin-panel hidden"><form id="daily-missions-form" class="mission-editor-list"></form><button id="save-daily-missions" class="gallery-button">Save daily missions</button><p id="daily-save-result" class="save-result hidden"></p></section>
+        <section id="parent-panel-secret" class="admin-panel hidden"><form id="assignments-form" class="mission-editor-list"></form><button id="save-assignments" class="gallery-button">Save secret assignments</button><p id="assignment-save-result" class="save-result hidden"></p></section>
+        <section id="parent-panel-pins" class="admin-panel hidden"><div class="admin-note">PINs are stored as hashes. Current PINs are never displayed.</div><form id="pin-manager-form" class="mission-editor-list"></form><button id="save-pin-changes" class="gallery-button">Save changed PINs</button><p id="pin-save-result" class="save-result hidden"></p><section class="mission-editor-card parent-pin-card"><div class="mission-editor-heading"><span class="mission-editor-icon">🔐</span><div><strong>Parent PIN</strong><small>Change the Parent Mode and override PIN</small></div></div><input id="new-parent-pin" type="password" inputmode="numeric" maxlength="8" placeholder="New Parent PIN"><button id="change-parent-pin" class="primary-button">Change Parent PIN</button><p id="parent-pin-result" class="save-result hidden"></p></section></section>
       </section>
     </section>
   </template>
@@ -184,7 +178,7 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=8"></script>
-  <script type="module" src="js/app.js?v=8"></script>
+  <script src="config.js?v=10"></script>
+  <script type="module" src="js/app.js?v=10"></script>
 </body>
 </html>
