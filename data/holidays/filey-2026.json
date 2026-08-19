@@ -1,0 +1,51 @@
+{
+  "id": "filey-2026",
+  "title": "Filey",
+  "subtitle": "2026",
+  "appTitle": "Family Adventure",
+  "startDate": "2026-08-29",
+  "days": [
+    {
+      "day": "Day 1",
+      "theme": "Red",
+      "photo": "Find something red that nobody else would think to photograph.",
+      "video": "What was the first thing you noticed when we arrived?"
+    },
+    {
+      "day": "Day 2",
+      "theme": "Texture",
+      "photo": "Capture an interesting texture.",
+      "video": "What was your favourite thing today?"
+    },
+    {
+      "day": "Day 3",
+      "theme": "Circles",
+      "photo": "Find a circle hiding somewhere in the day.",
+      "video": "What made you laugh most today?"
+    },
+    {
+      "day": "Day 4",
+      "theme": "Tiny Details",
+      "photo": "Photograph a tiny detail everyone else might miss.",
+      "video": "What surprised you today?"
+    },
+    {
+      "day": "Day 5",
+      "theme": "Movement",
+      "photo": "Capture something or someone in motion.",
+      "video": "What would you do again from today?"
+    },
+    {
+      "day": "Day 6",
+      "theme": "Something Unexpected",
+      "photo": "Photograph something you did not expect to see today.",
+      "video": "What is one thing you do not want to forget?"
+    },
+    {
+      "day": "Day 7",
+      "theme": "The Holiday in One Photo",
+      "photo": "Take one photo that sums up the whole holiday for you.",
+      "video": "Describe the holiday in one sentence."
+    }
+  ]
+}
