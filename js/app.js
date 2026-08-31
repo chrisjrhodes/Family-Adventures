@@ -242,13 +242,14 @@ function changeDay(delta) {
 async function refreshPhotoStatus() {
   if (!hasSupabase) return;
 
-  const { data, error } = await supabaseClient
-    .from("entries")
-    .select("id")
-    .eq("profile_id", state.profileId)
-    .eq("day_index", state.dayIndex)
-    .eq("media_type", "photo")
-    .limit(1);
+const { data, error } = await supabaseClient
+  .from("entries")
+  .select("id")
+  .eq("holiday_id", HOLIDAY.id)
+  .eq("profile_id", state.profileId)
+  .eq("day_index", state.dayIndex)
+  .eq("media_type", "photo")
+  .limit(1);
 
   if (!error && data?.length) {
     localStorage.setItem(photoKey(), "1");
@@ -370,6 +371,7 @@ async function savePhotoMission(file, button) {
     const { error: dbError } = await supabaseClient
       .from("entries")
       .insert({
+        holiday_id: HOLIDAY.id,
         profile_id: state.profileId,
         profile_name: PROFILES[state.profileId].name,
         day_index: state.dayIndex,
@@ -614,7 +616,7 @@ function initialiseParentTabs() {
     refreshButton.onclick = buildParentProgress;
   }
 }
-async function buildParentProgress(){const grid=document.getElementById("parent-progress-grid");if(!grid)return;grid.innerHTML='<p class="empty-state">Loading progress...</p>';const [d,s]=await Promise.all([supabaseClient.from("entries").select("profile_id,day_index,media_type").eq("media_type","photo"),supabaseClient.from("secret_photos").select("explorer_profile_id,partner_profile_id").eq("holiday_id",HOLIDAY.id)]);if(d.error||s.error){grid.innerHTML='<p class="admin-error">Could not load progress.</p>';return;}grid.replaceChildren();Object.entries(PROFILES).forEach(([id,p])=>{const photos=new Set((d.data||[]).filter(x=>x.profile_id===id).map(x=>x.day_index)).size;let videos=0;for(let i=0;i<DAYS.length;i++)if(localStorage.getItem(`family-adventure-${HOLIDAY.id}-${id}-${i}-video`))videos++;const secrets=new Set((s.data||[]).filter(x=>x.explorer_profile_id===id).map(x=>x.partner_profile_id)).size;const card=document.createElement("article");card.className="parent-progress-card";card.innerHTML=`<div class="parent-progress-heading"><span>${p.icon}</span><div><strong>${p.name}</strong><small>${p.role}</small></div></div><div class="parent-progress-stats"><div><strong>${photos}/${DAYS.length}</strong><span>daily photos</span></div><div><strong>${videos}/${DAYS.length}</strong><span>videos on this device</span></div><div><strong>${secrets}/5</strong><span>secret photos</span></div></div>`;grid.appendChild(card);});}
+async function buildParentProgress(){const grid=document.getElementById("parent-progress-grid");if(!grid)return;grid.innerHTML='<p class="empty-state">Loading progress...</p>';const [d,s]=await Promise.all([supabaseClient.from("entries").select("profile_id,day_index,media_type").eq("holiday_id", HOLIDAY.id).eq("media_type","photo"),supabaseClient.from("secret_photos").select("explorer_profile_id,partner_profile_id").eq("holiday_id",HOLIDAY.id)]);if(d.error||s.error){grid.innerHTML='<p class="admin-error">Could not load progress.</p>';return;}grid.replaceChildren();Object.entries(PROFILES).forEach(([id,p])=>{const photos=new Set((d.data||[]).filter(x=>x.profile_id===id).map(x=>x.day_index)).size;let videos=0;for(let i=0;i<DAYS.length;i++)if(localStorage.getItem(`family-adventure-${HOLIDAY.id}-${id}-${i}-video`))videos++;const secrets=new Set((s.data||[]).filter(x=>x.explorer_profile_id===id).map(x=>x.partner_profile_id)).size;const card=document.createElement("article");card.className="parent-progress-card";card.innerHTML=`<div class="parent-progress-heading"><span>${p.icon}</span><div><strong>${p.name}</strong><small>${p.role}</small></div></div><div class="parent-progress-stats"><div><strong>${photos}/${DAYS.length}</strong><span>daily photos</span></div><div><strong>${videos}/${DAYS.length}</strong><span>videos on this device</span></div><div><strong>${secrets}/5</strong><span>secret photos</span></div></div>`;grid.appendChild(card);});}
 function buildDailyMissionEditor() {
   const form = document.getElementById("daily-missions-form");
 
@@ -940,6 +942,7 @@ async function loadGallery() {
   const { data, error } = await supabaseClient
     .from("entries")
     .select("*")
+    .eq("holiday_id", HOLIDAY.id)
     .eq("day_index", state.galleryDay)
     .eq("media_type", "photo")
     .order("created_at", { ascending: true });
